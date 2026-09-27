@@ -1,0 +1,41 @@
+﻿<div class="mb-3">
+    <label class="form-label fw-bold">Escribe o selecciona tu dirección en el mapa:</label>
+    <input type="text" id="direccionInput" name="direccion" class="form-control" placeholder="Ej. Av. Javier Prado Este 1234, San Isidro, Lima" required />
+</div>
+<div id="mapa" style="height: 280px;" class="rounded border shadow-sm mb-2"></div>
+
+<script>
+    var map = L.map('mapa').setView([-12.046374, -77.042793], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    var marker = L.marker([-12.046374, -77.042793], { draggable: true }).addTo(map);
+
+    // 1. Al escribir dirección -> Mover pin en el mapa
+    document.getElementById('direccionInput').addEventListener('change', function() {
+        var direccion = this.value;
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(direccion + ', Peru'))
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    var lat = data[0].lat;
+                    var lon = data[0].lon;
+                    map.setView([lat, lon], 16);
+                    marker.setLatLng([lat, lon]);
+                }
+            });
+    });
+
+    // 2. Al arrastrar el pin -> Obtener dirección exacta (Reverse Geocoding)
+    marker.on('dragend', function (e) {
+        var latlng = marker.getLatLng();
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('direccionInput').value = data.display_name;
+                }
+            });
+    });
+</script>

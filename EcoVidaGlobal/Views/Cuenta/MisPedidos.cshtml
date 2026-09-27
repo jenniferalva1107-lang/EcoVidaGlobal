@@ -1,0 +1,40 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Pedido>
+
+@{
+    ViewData["Title"] = "Mis Pedidos";
+}
+
+<div class="container mt-4">
+    <h2 class="fw-bold text-success mb-4">📦 Mis Compras y Estado de Envío</h2>
+
+    @foreach (var p in Model)
+    {
+        <div class="card shadow-sm border-0 mb-3 p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="fw-bold text-dark mb-0">Pedido #@p.PedidoID - @p.FechaPedido.ToString("dd/MM/yyyy")</h5>
+                <span class="badge @(p.Estado == "Entregado" ? "bg-success" : p.Estado == "En Camino" ? "bg-info text-dark" : "bg-warning text-dark") fs-6">
+                    @p.Estado
+                </span>
+            </div>
+            <p class="text-muted small mb-2">📍 <strong>Dirección:</strong> @p.DireccionEnvio</p>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in p.Detalles)
+                        {
+                            <tr>
+                                <td>@d.Producto?.Nombre</td>
+                                <td>@d.Cantidad</td>
+                                <td>S/ @(d.PrecioUnitario* d.Cantidad)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-end fw-bold text-success fs-5">Total: S/ @p.Total</div>
+        </div>
+    }
+</div>

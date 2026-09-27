@@ -1,0 +1,34 @@
+﻿@{
+    ViewData["Title"] = "Verificación OTP";
+    var correo = ViewBag.Correo as string ?? "tu correo registrado";
+}
+
+<div class="container mt-5" style="max-width: 450px;">
+    <div class="card shadow border-0 p-4">
+        <h4 class="fw-bold text-success text-center mb-3">🔑 Verificación de Código OTP</h4>
+        <p class="text-muted small text-center">Hemos enviado un código de seguridad a <strong>@correo</strong>.</p>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger text-center p-2 mb-3">
+                @ViewBag.Error
+            </div>
+        }
+
+        <!-- Apuntamos explícitamente a VerificarOtp -->
+        <form asp-controller="Cuenta" asp-action="VerificarOtp" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label fw-bold text-center d-block">Código de 6 dígitos</label>
+                <input type="text" name="codigo" maxlength="6" class="form-control text-center fw-bold fs-4 letter-spacing-2" placeholder="000000" required autofocus autocomplete="off" />
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 fw-bold py-2 mt-2">Verificar e Iniciar Sesión</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <small class="text-muted">¿Código de prueba para desarrollo? Puedes usar: <strong>999999</strong></small>
+        </div>
+    </div>
+</div>

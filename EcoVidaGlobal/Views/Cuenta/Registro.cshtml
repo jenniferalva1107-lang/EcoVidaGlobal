@@ -1,0 +1,42 @@
+﻿@{
+    ViewData["Title"] = "Registro de Usuario";
+}
+
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card shadow border-0 p-4">
+        <h3 class="text-center text-success fw-bold mb-3">🌱 Crear Cuenta en EcoVida Global</h3>
+        <p class="text-muted text-center small mb-4">Ingresa tus datos para registrarte como cliente.</p>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger">@ViewBag.Error</div>
+        }
+
+        <form asp-action="Registro" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nombre Completo</label>
+                <input type="text" name="nombre" class="form-control" placeholder="Ej. Juan Pérez" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Correo Electrónico</label>
+                <input type="email" name="correo" class="form-control" placeholder="usuario@correo.com" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Contraseña</label>
+                <input type="password" name="password" class="form-control" required />
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">DNI</label>
+                    <input type="text" name="dni" class="form-control" placeholder="8 dígitos" required />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Teléfono / Móvil</label>
+                    <input type="text" name="telefono" class="form-control" placeholder="987654321" required />
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold mt-2">Registrarse y Generar Cuenta</button>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,156 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Producto>
+@using Microsoft.AspNetCore.Http
+@using EcoVidaGlobal.Extensions
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Catálogo de Productos";
+    var usuarioNombre = HttpContextAccessor.HttpContext?.Session.GetString("UsuarioNombre");
+    var usuarioRol = HttpContextAccessor.HttpContext?.Session.GetString("UsuarioRol");
+
+    var estaAutenticado = !string.IsNullOrEmpty(usuarioNombre);
+    var esAdmin = usuarioRol == "Administrador";
+    var esAlmacen = usuarioRol == "Almacen" || esAdmin;
+
+    // Obtener los productos actuales del carrito desde la sesión
+    var carritoActual = HttpContextAccessor.HttpContext?.Session.GetObjectFromJson<List<EcoVidaGlobal.Models.ItemCarrito>>("CarritoCompras")
+                        ?? new List<EcoVidaGlobal.Models.ItemCarrito>();
+    var totalGeneral = carritoActual.Sum(i => i.Subtotal);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-success mb-1">🌿 Catálogo Completo</h2>
+        <p class="text-muted small">Selecciona los productos y cantidades que deseas agregar a tu canasta.</p>
+    </div>
+    @if (esAdmin)
+    {
+        <a asp-action="Crear" class="btn btn-success fw-bold">+ Nuevo Producto</a>
+    }
+</div>
+
+<div class="row">
+    <!-- SECCIÓN IZQUIERDA: TARJETAS DE PRODUCTOS (9 columnas) -->
+    <div class="col-lg-8 col-xl-9">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+            @foreach (var item in Model)
+            {
+                var precioOriginal = item.Precio * 1.25m;
+
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 position-relative">
+                        <span class="position-absolute top-0 start-0 bg-danger text-white px-3 py-1 fw-bold rounded-end mt-3 shadow-sm" style="font-size: 0.75rem;">
+                            20% OFF
+                        </span>
+
+                        <img src="@(string.IsNullOrEmpty(item.ImagenUrl) ? "/images/no-image.png" : item.ImagenUrl)" class="card-img-top p-3" style="height: 180px; object-fit: contain;" alt="@item.Nombre" />
+
+                        <div class="card-body d-flex flex-column">
+                            <span class="badge bg-light text-success border mb-2 w-auto me-auto">@item.Categoria?.Nombre</span>
+                            <h6 class="card-title fw-bold text-dark mb-1">@item.Nombre</h6>
+                            <p class="card-text text-muted small flex-grow-1" style="font-size: 0.825rem;">@item.Descripcion</p>
+
+                            <div class="mt-2 mb-3">
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <span class="text-muted text-decoration-line-through small" style="font-size: 0.8rem;">S/ @precioOriginal.ToString("F2")</span>
+                                    <span class="fs-5 fw-bold text-success">S/ @item.Precio.ToString("F2")</span>
+                                </div>
+
+                                @if (esAlmacen)
+                                {
+                                    <div class="mt-1">
+                                        <span class="badge bg-info text-dark" style="font-size: 0.7rem;">Stock: @item.Stock</span>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (estaAutenticado)
+                            {
+                                <form asp-controller="Carrito" asp-action="Agregar" method="post" class="mt-auto">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="productoId" value="@item.ProductoID" />
+                                    <input type="hidden" name="returnUrl" value="/Producto" />
+
+                                    <div class="d-flex gap-2 mb-2">
+                                        <label class="form-label small text-muted mb-0 align-self-center">Cant:</label>
+                                        <input type="number" name="cantidad" value="1" min="1" max="@item.Stock" class="form-control form-control-sm text-center fw-bold" style="width: 70px;" />
+                                    </div>
+
+                                    <button type="submit" class="btn btn-outline-success w-100 fw-bold btn-sm">
+                                        ➕ Agregar a la Canasta
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a asp-controller="Cuenta" asp-action="Login" asp-route-mensaje="Debes Iniciar Sesión primero para realizar tus compras." class="btn btn-success w-100 fw-bold btn-sm mt-auto">
+                                    🛒 Comprar
+                                </a>
+                            }
+
+                            @if (esAdmin)
+                            {
+                                <form asp-action="Eliminar" asp-route-id="@item.ProductoID" method="post" class="mt-2" onsubmit="return confirm('¿Seguro que deseas eliminar este producto?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;">Eliminar Producto</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- SECCIÓN DERECHA: PANEL LATERAL DE CANASTA / RESUMEN (3 columnas) -->
+    <div class="col-lg-4 col-xl-3 mt-4 mt-lg-0">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+            <div class="card-header bg-success text-white py-3">
+                <h5 class="fw-bold mb-0 text-center">🧺 Tu Canasta</h5>
+            </div>
+
+            <div class="card-body p-3">
+                @if (!carritoActual.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <p class="small mb-0">Aún no has seleccionado ningún producto.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush mb-3" style="max-height: 280px; overflow-y: auto;">
+                        @foreach (var item in carritoActual)
+                        {
+                            <div class="list-group-item px-0 py-2 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong class="d-block text-dark small">@item.Nombre</strong>
+                                        <span class="text-muted small">@item.Cantidad x S/ @item.Precio.ToString("F2")</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="fw-bold text-success small d-block">S/ @item.Subtotal.ToString("F2")</span>
+                                        <form asp-controller="Carrito" asp-action="Eliminar" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="productoId" value="@item.ProductoID" />
+                                            <input type="hidden" name="returnUrl" value="/Producto" />
+                                            <button type="submit" class="btn btn-link text-danger p-0 border-0 small" style="font-size: 0.75rem;">Quitar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-between fw-bold fs-6 mb-3 pt-2 border-top">
+                        <span>Total estimado:</span>
+                        <span class="text-success">S/ @totalGeneral.ToString("F2")</span>
+                    </div>
+
+                    <a asp-controller="Carrito" asp-action="Index" class="btn btn-success w-100 fw-bold py-2 shadow-sm">
+                        Ir a Canasta y Pagos ➔
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

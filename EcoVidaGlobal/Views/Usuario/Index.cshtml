@@ -1,0 +1,83 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Usuario>
+
+@{
+    ViewData["Title"] = "Gestión de Usuarios por Área";
+    var roles = ViewBag.Roles as List<EcoVidaGlobal.Models.Rol> ?? new List<EcoVidaGlobal.Models.Rol>();
+    int rolSeleccionado = ViewBag.RolSeleccionado;
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-success mb-1">🛡️ Panel de Administración de Usuarios</h2>
+            <p class="text-muted mb-0">Gestión de personal, asignación de roles y permisos por área de trabajo.</p>
+        </div>
+        <a asp-action="Crear" class="btn btn-success fw-bold px-3 shadow-sm">+ Crear Usuario de Área</a>
+    </div>
+
+    <!-- Filtros de Navegación por Área / Rol -->
+    <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm border">
+        <li class="nav-item">
+            <a class="nav-link @(rolSeleccionado == 0 ? "active bg-success" : "text-dark") fw-semibold" asp-action="Index" asp-route-rolFiltro="0">
+                🌐 Todas las Áreas (@Model.Count())
+            </a>
+        </li>
+        @foreach (var r in roles)
+        {
+            var cantUsuarios = Model.Count(u => u.RolID == r.RolID);
+            <li class="nav-item">
+                <a class="nav-link @(rolSeleccionado == r.RolID ? "active bg-success" : "text-dark") fw-semibold" asp-action="Index" asp-route-rolFiltro="@r.RolID">
+                    📌 Área: @r.NombreRol
+                </a>
+            </li>
+        }
+    </ul>
+
+    <!-- Tabla General de Usuarios -->
+    <div class="card shadow border-0 p-3">
+        <div class="table-responsive">
+            <table class="table align-middle table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Usuario / Nombre</th>
+                        <th>Correo Electrónico</th>
+                        <th>DNI</th>
+                        <th>Teléfono</th>
+                        <th>Área / Permiso</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">@u.NombreCompleto</div>
+                                <span class="small text-muted">ID: #@u.UsuarioID</span>
+                            </td>
+                            <td>@u.Correo</td>
+                            <td>@u.DNI</td>
+                            <td>@u.Telefono</td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success fw-bold px-2 py-1">
+                                    @u.Rol?.NombreRol
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge @(u.EstadoCuenta == "Activo" ? "bg-primary" : "bg-warning text-dark")">
+                                    @u.EstadoCuenta
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="Editar" asp-route-id="@u.UsuarioID" class="btn btn-outline-success btn-sm fw-bold px-3">
+                                    ✏️ Editar Permisos
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

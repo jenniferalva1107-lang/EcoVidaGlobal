@@ -1,0 +1,52 @@
+﻿@{
+    ViewData["Title"] = "Iniciar Sesión";
+}
+
+<div class="container mt-5" style="max-width: 450px;">
+    <div class="card shadow border-0 p-4">
+        <h3 class="fw-bold text-success text-center mb-4">🔑 Iniciar Sesión</h3>
+
+        @if (ViewBag.Mensaje != null)
+        {
+            <div class="alert alert-success text-center p-2 mb-3">
+                @ViewBag.Mensaje
+            </div>
+        }
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="alert alert-danger text-center p-2 mb-3">
+                @ViewBag.Error
+            </div>
+        }
+
+        <form asp-controller="Cuenta" asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label fw-bold">Correo Electrónico</label>
+                <input type="email" name="correo" class="form-control" placeholder="usuario@correo.com" required />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Contraseña</label>
+                <input type="password" name="password" class="form-control" required />
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 fw-bold py-2">Ingresar al Sistema</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a asp-controller="Cuenta" asp-action="OlvidePassword" class="text-success small fw-bold">¿Olvidaste tu contraseña? Restablécela aquí</a>
+        </div>
+
+        <hr class="my-4" />
+
+        <a asp-controller="Cuenta" asp-action="GoogleLogin" class="btn btn-outline-danger w-100 fw-bold py-2">
+            <img src="https://developers.google.com/identity/images/g-logo.png" width="20" class="me-2" /> Continuar con Google
+        </a>
+
+        <div class="text-center mt-3">
+            <a asp-controller="Cuenta" asp-action="Registro" class="text-secondary small fw-bold">¿No tienes cuenta? Regístrate aquí</a>
+        </div>
+    </div>
+</div>
