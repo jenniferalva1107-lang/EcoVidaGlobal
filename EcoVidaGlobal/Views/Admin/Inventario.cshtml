@@ -1,0 +1,61 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Producto>
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Inventario";
+}
+
+<h3 class="fw-bold mb-4 text-dark">
+    <i class="bi bi-boxes text-success me-2"></i>
+    Control General de Inventarios
+</h3>
+
+<div class="card p-4 shadow-sm border-0 rounded-3 bg-white">
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID Producto</th>
+                    <th>Producto</th>
+                    <th>Stock Actual</th>
+                    <th>Nivel Alerta</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td>@($"PROD-{p.ProductoID:D3}")</td>
+
+                        <td class="fw-bold">@p.Nombre</td>
+
+                        <td>@p.Stock</td>
+
+                        <td>
+                            @if (p.Stock == 0)
+                            {
+                                <span class="badge bg-danger">
+                                    🔴 Agotado
+                                </span>
+                            }
+                            else if (p.Stock <= 5)
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    🟡 Stock Bajo
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">
+                                    🟢 Disponible
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+

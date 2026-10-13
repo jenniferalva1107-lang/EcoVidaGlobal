@@ -17,5 +17,9 @@ namespace EcoVidaGlobal.Data
         public DbSet<VerificationCode> VerificationCodes { get; set; }
         public DbSet<Pedido> Pedidos { get; set; }
         public DbSet<DetallePedido> DetallePedidos { get; set; }
+        public DbSet<CarritoItem> CarritoItems { get; set; }
+        public DbSet<Gasto> Gastos { get; set; }
+        public DbSet<SolicitudReposicion> SolicitudesReposicion { get; set; }
+
     }
 }

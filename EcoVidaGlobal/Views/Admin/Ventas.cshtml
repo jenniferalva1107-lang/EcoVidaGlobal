@@ -1,0 +1,49 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Pedido>
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Ventas";
+}
+
+<h3 class="fw-bold mb-4 text-dark">
+    <i class="bi bi-graph-up-arrow text-success me-2"></i>
+    Registro Consolidado de Ventas
+</h3>
+
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N° Venta</th>
+                    <th>Cliente</th>
+                    <th>Fecha Operación</th>
+                    <th>Monto Recaudado</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var v in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">
+                            @($"VEN-{v.PedidoID:D6}")
+                        </td>
+
+                        <td>
+                            @(v.Usuario?.NombreCompleto ?? "Cliente Registrado")
+                        </td>
+
+                        <td>
+                            @v.FechaPedido.ToString("dd/MM/yyyy")
+                        </td>
+
+                        <td class="fw-bold text-success">
+                            S/ @v.Total.ToString("F2")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

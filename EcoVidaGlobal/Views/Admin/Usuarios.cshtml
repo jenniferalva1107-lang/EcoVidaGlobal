@@ -1,0 +1,205 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Usuario>
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Gestión de Usuarios";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="fw-bold text-dark mb-0"><i class="bi bi-people text-success me-2"></i>Gestión de Usuarios</h3>
+    <button class="btn btn-success fw-bold shadow-sm" onclick="abrirModalCrear()">
+        <i class="bi bi-person-plus-fill me-1"></i> + Crear Usuario
+    </button>
+</div>
+
+<div class="card p-4 shadow-sm border-0 rounded-3 bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Completo</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr id="fila-usuario-@u.UsuarioID">
+                        <td class="fw-bold">#@u.UsuarioID</td>
+                        <td>@u.NombreCompleto</td>
+                        <td>@u.Correo</td>
+                        <td><span class="badge bg-secondary">@(u.Rol?.NombreRol ?? "Sin Rol")</span></td>
+                        <td>
+                            @if (u.EstadoCuenta == "Activo")
+                            {
+                                <span class="badge bg-success" id="badge-estado-@u.UsuarioID">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark" id="badge-estado-@u.UsuarioID">Inactivo</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-warning btn-sm fw-semibold me-1"
+                                    onclick="cambiarEstado(@u.UsuarioID)">
+                                <i class="bi bi-power me-1"></i>Dar de Baja/Alta
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm fw-semibold"
+                                    onclick="eliminarUsuario(@u.UsuarioID, '@u.NombreCompleto')">
+                                <i class="bi bi-trash me-1"></i>Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL PARA CREAR USUARIO -->
+<div class="modal fade" id="modalCrearUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold">👤 Crear Nuevo Usuario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Nombre Completo:</label>
+                    <input type="text" id="nuevoNombre" class="form-control" placeholder="Ej. Carlos Mendoza" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Correo Electrónico:</label>
+                    <input type="email" id="nuevoCorreo" class="form-control" placeholder="usuario@ecovidaglobal.com" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Contraseña:</label>
+                    <input type="password" id="nuevoPassword" class="form-control" placeholder="••••••••" />
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-bold small">DNI:</label>
+                        <input type="text" id="nuevoDNI" class="form-control" placeholder="78901234" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold small">Teléfono:</label>
+                        <input type="text" id="nuevoTelefono" class="form-control" placeholder="987654321" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Rol Asignado:</label>
+                    <select id="nuevoRolID" class="form-select">
+                        <option value="1">1 - Administrador</option>
+                        <option value="2" selected>2 - Cliente</option>
+                        <option value="3">3 - Call Center</option>
+                        <option value="4">4 - Módulo Contable</option>
+                        <option value="5">5 - Sistemas</option>
+                        <option value="6">6 - Trabajador de Almacén</option>
+                        <option value="7">7 - Vendedor</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success fw-bold px-4" onclick="guardarNuevoUsuario()">Guardar Usuario</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let modalCrear = null;
+
+    function abrirModalCrear() {
+        var el = document.getElementById('modalCrearUsuario');
+        modalCrear = new bootstrap.Modal(el);
+        modalCrear.show();
+    }
+
+    function guardarNuevoUsuario() {
+        var nombre = document.getElementById('nuevoNombre').value;
+        var correo = document.getElementById('nuevoCorreo').value;
+        var password = document.getElementById('nuevoPassword').value;
+        var dni = document.getElementById('nuevoDNI').value;
+        var telefono = document.getElementById('nuevoTelefono').value;
+        var rolId = document.getElementById('nuevoRolID').value;
+
+        if (!nombre || !correo || !password) {
+            alert('Por favor completa los campos obligatorios.');
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('nombreCompleto', nombre);
+        formData.append('correo', correo);
+        formData.append('password', password);
+        formData.append('dni', dni);
+        formData.append('telefono', telefono);
+        formData.append('rolId', rolId);
+
+        fetch('/Admin/CrearUsuario', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.exito) {
+                alert(data.mensaje);
+                location.reload();
+            } else {
+                alert('Error: ' + data.mensaje);
+            }
+        });
+    }
+
+    function cambiarEstado(id) {
+        var formData = new FormData();
+        formData.append('usuarioId', id);
+
+        fetch('/Admin/CambiarEstadoUsuario', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.exito) {
+                var badge = document.getElementById('badge-estado-' + id);
+                if (data.nuevoEstado === 'Activo') {
+                    badge.className = 'badge bg-success';
+                    badge.innerText = 'Activo';
+                } else {
+                    badge.className = 'badge bg-warning text-dark';
+                    badge.innerText = 'Inactivo';
+                }
+            } else {
+                alert(data.mensaje);
+            }
+        });
+    }
+
+    function eliminarUsuario(id, nombre) {
+        if (!confirm('¿Estás seguro de eliminar permanentemente al usuario "' + nombre + '"?')) return;
+
+        var formData = new FormData();
+        formData.append('usuarioId', id);
+
+        fetch('/Admin/EliminarUsuario', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.exito) {
+                var fila = document.getElementById('fila-usuario-' + id);
+                if (fila) fila.remove();
+                alert(data.mensaje);
+            } else {
+                alert(data.mensaje);
+            }
+        });
+    }
+</script>

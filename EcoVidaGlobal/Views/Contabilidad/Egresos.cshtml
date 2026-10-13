@@ -1,0 +1,265 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.SolicitudReposicion>
+@using EcoVidaGlobal.Models
+
+@{
+    Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
+    ViewData["Title"] = "Registro de Egresos";
+
+    var gastos = ViewBag.Gastos as IEnumerable<Gasto>
+        ?? Enumerable.Empty<Gasto>();
+}
+
+<h3 class="fw-bold mb-4">
+    <i class="bi bi-wallet2 text-danger me-2"></i>
+    Registro de Egresos y Gastos Operativos
+</h3>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Mensaje"]
+        <button type="button" class="btn-close"
+                data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close"
+                data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- 1. Solicitudes pendientes -->
+<div class="card p-4 shadow-sm border-0 bg-white mb-4">
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-clipboard-check text-primary me-2"></i>
+        Solicitudes de reposición pendientes
+    </h5>
+
+    <p class="text-muted">
+        Revisa cada solicitud antes de autorizar la compra.
+        Una solicitud pendiente todavía no representa un gasto registrado.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N.º</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Proveedor</th>
+                    <th>Precio referencia</th>
+                    <th>Descuento</th>
+                    <th>Total estimado</th>
+                    <th>Fecha</th>
+                    <th style="min-width: 190px;">Decisión</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td>#@s.SolicitudID</td>
+                        <td class="fw-bold">
+                            @(s.Producto?.Nombre
+                                                    ?? $"Producto #{s.ProductoID}")
+                    </td>
+                    <td>@s.CantidadSolicitada</td>
+                    <td>@s.Proveedor</td>
+                    <td>
+                        S/ @s.PrecioUnitarioReferencia.ToString("N2")
+                    </td>
+                    <td>
+                        @s.DescuentoPorcentaje.ToString("N0")%
+                    </td>
+                    <td class="fw-bold">
+                        S/ @s.MontoEstimado.ToString("N2")
+                    </td>
+                    <td>
+                        @s.FechaSolicitud.ToString("dd/MM/yyyy HH:mm")
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <form asp-controller="Contabilidad"
+                                  asp-action="AprobarSolicitud"
+                                  method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden"
+                                       name="solicitudId"
+                                       value="@s.SolicitudID" />
+                                <button type="submit"
+                                        class="btn btn-success btn-sm fw-bold">
+                                    Aprobar
+                                </button>
+                            </form>
+
+                                <form asp-controller="Contabilidad"
+                                      asp-action="RechazarSolicitud"
+                                      method="post"
+                                      onsubmit="return confirm('¿Rechazar esta solicitud de reposición?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden"
+                                           name="solicitudId"
+                                           value="@s.SolicitudID" />
+                                    <button type="submit"
+                                            class="btn btn-outline-danger btn-sm fw-bold">
+                                        Rechazar
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info mb-0">
+            No hay solicitudes de reposición pendientes de aprobación.
+        </div>
+    }
+</div>
+
+<!-- 2. Historial de gastos registrados -->
+<div class="card p-4 shadow-sm border-0 bg-white mb-4">
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-receipt text-danger me-2"></i>
+        Historial de gastos registrados
+    </h5>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N.º</th>
+                    <th>Concepto / Proveedor</th>
+                    <th>Categoría</th>
+                    <th>Fecha de registro</th>
+                    <th class="text-end">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in gastos)
+                {
+                    <tr>
+                        <td>#@g.GastoID</td>
+                        <td>@g.Concepto</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                @g.Categoria
+                            </span>
+                        </td>
+                        <td>
+                            @g.FechaRegistro.ToString("dd/MM/yyyy HH:mm")
+                        </td>
+                        <td class="text-end fw-bold text-danger">
+                            S/ @g.Monto.ToString("N2")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            @if (gastos.Any())
+            {
+                <tfoot>
+                    <tr>
+                        <th colspan="4" class="text-end">
+                            Total de gastos registrados:
+                        </th>
+                        <th class="text-end text-danger">
+                            S/ @gastos.Sum(g => g.Monto).ToString("N2")
+                        </th>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+
+    @if (!gastos.Any())
+    {
+        <div class="alert alert-info mb-0">
+            Todavía no hay gastos registrados.
+        </div>
+    }
+</div>
+
+<!-- 3. Formulario de registro manual -->
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <h5 class="fw-bold mb-3">
+        <i class="bi bi-plus-circle text-primary me-2"></i>
+        Registrar nuevo gasto
+    </h5>
+
+    <p class="text-muted">
+        Registra gastos operativos que no se hayan registrado
+        previamente mediante el proceso de reposición.
+    </p>
+
+    <form asp-controller="Contabilidad"
+          asp-action="RegistrarGasto"
+          method="post"
+          class="row g-3">
+
+        @Html.AntiForgeryToken()
+
+        <div class="col-md-4">
+            <label for="Concepto" class="form-label fw-bold small">
+                Concepto / Proveedor
+            </label>
+            <input type="text"
+                   id="Concepto"
+                   name="Concepto"
+                   class="form-control"
+                   maxlength="150"
+                   placeholder="Ej. Compra de cajas ecológicas"
+                   required />
+        </div>
+
+        <div class="col-md-4">
+            <label for="Categoria" class="form-label fw-bold small">
+                Categoría de gasto
+            </label>
+            <select id="Categoria"
+                    name="Categoria"
+                    class="form-select"
+                    required>
+                <option value="Empaque y Cajas Ecológicas">
+                    Empaque y Cajas Ecológicas
+                </option>
+                <option value="Envíos y Logística">
+                    Envíos y Logística
+                </option>
+                <option value="Servicios Generales">
+                    Servicios Generales
+                </option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label for="Monto" class="form-label fw-bold small">
+                Monto (S/)
+            </label>
+            <input type="number"
+                   id="Monto"
+                   name="Monto"
+                   class="form-control"
+                   min="0.01"
+                   max="999999999"
+                   step="0.01"
+                   placeholder="0.00"
+                   required />
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit"
+                    class="btn btn-danger fw-bold w-100">
+                Guardar gasto
+            </button>
+        </div>
+    </form>
+</div>

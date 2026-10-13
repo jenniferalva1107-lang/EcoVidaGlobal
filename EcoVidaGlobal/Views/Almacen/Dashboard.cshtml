@@ -1,0 +1,45 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutAlmacen.cshtml";
+    ViewData["Title"] = "Dashboard Logístico";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold text-dark"><i class="bi bi-boxes text-warning me-2"></i> Estado General de Almacén</h3>
+    <span class="badge bg-warning text-dark px-3 py-2 fs-6">Personal de Almacén</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-primary bg-white">
+            <small class="text-muted fw-bold">TOTAL SKUs REGISTRADOS</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.TotalProductos</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-warning bg-white">
+            <small class="text-muted fw-bold">STOCK CRÍTICO (≤ 5)</small>
+            <h3 class="fw-bold text-warning mt-1">@ViewBag.StockBajo</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-danger bg-white">
+            <small class="text-muted fw-bold">PRODUCTOS AGOTADOS</small>
+            <h3 class="fw-bold text-danger mt-1">@ViewBag.Agotados</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-success bg-white">
+            <small class="text-muted fw-bold">PEDIDOS POR EMPAQUETAR</small>
+            <h3 class="fw-bold text-success mt-1">@ViewBag.PedidosPorDespachar</h3>
+        </div>
+    </div>
+</div>
+
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <h5 class="fw-bold mb-3">Acciones Rápidas de Almacén</h5>
+    <div class="d-flex gap-3">
+        <a href="/Almacen/Inventario" class="btn btn-outline-dark fw-bold"><i class="bi bi-boxes me-1"></i> Ver Inventario Completo</a>
+        <a href="/Almacen/Despachos" class="btn btn-warning fw-bold text-dark"><i class="bi bi-truck me-1"></i> Atender Pedidos Pendientes</a>
+        <a href="/Almacen/Reposicion" class="btn btn-danger fw-bold"><i class="bi bi-exclamation-triangle me-1"></i> Revisar Stock Bajo</a>
+    </div>
+</div>

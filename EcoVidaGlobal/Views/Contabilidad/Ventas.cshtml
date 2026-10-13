@@ -1,0 +1,37 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Pedido>
+@{
+    Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
+    ViewData["Title"] = "Libro de Ventas";
+}
+
+<h3 class="fw-bold mb-4"><i class="bi bi-receipt text-success me-2"></i>Registro de Ventas e Ingresos</h3>
+
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N° Pedido / Boleta</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Método Pago</th>
+                    <th>Estado</th>
+                    <th class="text-end">Monto Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">#EV-2026-@p.PedidoID.ToString("D6")</td>
+                        <td>@(p.Usuario?.NombreCompleto ?? "Cliente General")</td>
+                        <td>@p.FechaPedido.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td><span class="badge bg-secondary">@(p.MetodoPago ?? "Yape / Plin")</span></td>
+                        <td><span class="badge bg-success">@p.Estado</span></td>
+                        <td class="text-end fw-bold text-success">S/ @p.Total.ToString("F2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

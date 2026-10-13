@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using EcoVidaGlobal.Data;
 using EcoVidaGlobal.Models;
 using EcoVidaGlobal.Services;
+using System;
+using System.Collections.Generic;
 
 namespace EcoVidaGlobal.Controllers
 {
@@ -19,6 +21,23 @@ namespace EcoVidaGlobal.Controllers
         {
             _context = context;
             _otpService = otpService;
+        }
+
+        // Método auxiliar para redirigir según el rol del usuario
+
+        private IActionResult RedirigirPorRol(int rolId)
+        {
+            return rolId switch
+            {
+                1 => RedirectToAction("Dashboard", "Admin"),
+                2 => RedirectToAction("Index", "Producto"),
+                3 => RedirectToAction("Dashboard", "CallCenter"),
+                4 => RedirectToAction("Dashboard", "Contabilidad"),
+                5 => RedirectToAction("Dashboard", "Sistemas"),
+                6 => RedirectToAction("Dashboard", "Almacen"),
+                7 => RedirectToAction("Dashboard", "Vendedor"),
+                _ => RedirectToAction("Login", "Cuenta")
+            };
         }
 
         // GET: /Cuenta/Login
@@ -35,16 +54,44 @@ namespace EcoVidaGlobal.Controllers
         {
             var usuario = await _context.Usuarios.Include(u => u.Rol).FirstOrDefaultAsync(u => u.Correo == correo);
 
-            if (usuario == null || !PasswordHasherUtil.VerifyPassword(usuario, usuario.PasswordHash, password))
+            bool passwordValida = false;
+            if (usuario != null)
+            {
+                passwordValida = usuario.PasswordHash == password ||
+                                 PasswordHasherUtil.VerifyPassword(usuario, usuario.PasswordHash, password);
+            }
+
+            if (usuario == null || !passwordValida)
             {
                 ViewBag.Error = "Correo o contraseña incorrectos.";
                 return View();
             }
 
+            // Bloquear cuentas desactivadas antes de cualquier autenticación.
+            if (usuario.EstadoCuenta != "Activo")
+            {
+                ViewBag.Error =
+                    "Tu cuenta no está activa. Contacta con el administrador.";
+                return View();
+            }
+
+            // SI ES ADMINISTRADOR: OMITIR OTP E INICIAR SESIÓN DIRECTAMENTE EN SU PANEL
+            if (usuario.RolID == 1 || usuario.Correo == "jenniferalva1107@gmail.com")
+            {
+                HttpContext.Session.SetInt32("UsuarioID", usuario.UsuarioID);
+                HttpContext.Session.SetString("UsuarioNombre", usuario.NombreCompleto);
+                HttpContext.Session.SetString("UsuarioRol", usuario.Rol?.NombreRol ?? "Administrador");
+                HttpContext.Session.SetInt32("UsuarioRolID", 1);
+
+                return RedirectToAction("Dashboard", "Admin");
+            }
+
+            // PARA OTROS ROLES: SOLICITAR CÓDIGO OTP POR CORREO
             await _otpService.GenerarYEnviarOtpAsync(usuario, "LOGIN");
 
             HttpContext.Session.SetInt32("UsuarioID_PendienteOTP", usuario.UsuarioID);
             HttpContext.Session.SetString("Correo_PendienteOTP", usuario.Correo);
+            HttpContext.Session.SetString("TipoOtpPendiente", "LOGIN");
 
             return RedirectToAction(nameof(VerificarOtp));
         }
@@ -66,8 +113,9 @@ namespace EcoVidaGlobal.Controllers
                 return View(usuario);
             }
 
+            usuario.CodigoUsuario = await GenerarCodigoUsuarioAsync();
             usuario.PasswordHash = PasswordHasherUtil.HashPassword(usuario, password);
-            usuario.RolID = 2; // Cliente por defecto
+            usuario.RolID = 2;
             usuario.EstadoCuenta = "PendienteVerificacion";
 
             _context.Usuarios.Add(usuario);
@@ -75,8 +123,14 @@ namespace EcoVidaGlobal.Controllers
 
             await _otpService.GenerarYEnviarOtpAsync(usuario, "REGISTRO");
 
-            HttpContext.Session.SetInt32("UsuarioID_PendienteOTP", usuario.UsuarioID);
-            HttpContext.Session.SetString("Correo_PendienteOTP", usuario.Correo);
+            HttpContext.Session.SetInt32(
+                "UsuarioID_PendienteOTP", usuario.UsuarioID);
+
+            HttpContext.Session.SetString(
+                "Correo_PendienteOTP", usuario.Correo);
+
+            HttpContext.Session.SetString(
+                "TipoOtpPendiente", "REGISTRO");
 
             return RedirectToAction(nameof(VerificarOtp));
         }
@@ -122,6 +176,7 @@ namespace EcoVidaGlobal.Controllers
 
             HttpContext.Session.SetInt32("UsuarioID_PendienteOTP", usuario.UsuarioID);
             HttpContext.Session.SetString("Correo_PendienteOTP", usuario.Correo);
+            HttpContext.Session.SetString("TipoOtpPendiente", "LOGIN_GOOGLE");
 
             return RedirectToAction(nameof(VerificarOtp));
         }
@@ -157,6 +212,7 @@ namespace EcoVidaGlobal.Controllers
             {
                 usuario = new Usuario
                 {
+                    CodigoUsuario = await GenerarCodigoUsuarioAsync(),
                     NombreCompleto = nombre!,
                     Correo = correo,
                     DNI = dni,
@@ -180,6 +236,7 @@ namespace EcoVidaGlobal.Controllers
 
                 HttpContext.Session.SetInt32("UsuarioID_PendienteOTP", usuario.UsuarioID);
                 HttpContext.Session.SetString("Correo_PendienteOTP", usuario.Correo);
+                HttpContext.Session.SetString("TipoOtpPendiente", "REGISTRO_GOOGLE");
 
                 return RedirectToAction(nameof(VerificarOtp));
             }
@@ -187,16 +244,131 @@ namespace EcoVidaGlobal.Controllers
             return RedirectToAction(nameof(Login));
         }
 
+
+        //Olvide Password
+
+        // GET: /Cuenta/OlvidePassword
+        [HttpGet]
+        public IActionResult OlvidePassword()
+        {
+            return View();
+        }
+
+        // POST: /Cuenta/OlvidePassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> OlvidePassword(
+            string codigoUsuario,
+            string? correoTemporal)
+        {
+            if (string.IsNullOrWhiteSpace(codigoUsuario))
+            {
+                ViewBag.Error = "Ingresa tu código de usuario.";
+                return View();
+            }
+
+            string codigoBuscado = codigoUsuario.Trim();
+
+            var usuario = await _context.Usuarios
+                .FirstOrDefaultAsync(u =>
+                    u.CodigoUsuario == codigoBuscado);
+
+            if (usuario == null)
+            {
+                ViewBag.Error = "No se encontró una cuenta con ese código.";
+                return View();
+            }
+
+            bool requiereCorreoTemporal =
+                !string.IsNullOrWhiteSpace(usuario.Correo) &&
+                usuario.Correo.EndsWith(
+                    ".test",
+                    StringComparison.OrdinalIgnoreCase);
+
+            string? destinoOtp = null;
+
+            if (requiereCorreoTemporal)
+            {
+                if (string.IsNullOrWhiteSpace(correoTemporal))
+                {
+                    ViewBag.PedirCorreoTemporal = true;
+                    ViewBag.CodigoUsuario = codigoBuscado;
+                    return View();
+                }
+
+                correoTemporal = correoTemporal.Trim();
+
+                bool correoValido =
+                    new System.ComponentModel.DataAnnotations
+                        .EmailAddressAttribute()
+                        .IsValid(correoTemporal);
+
+                if (!correoValido ||
+                    correoTemporal.EndsWith(
+                        ".test",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    ViewBag.Error =
+                        "Ingresa un correo temporal válido.";
+                    ViewBag.PedirCorreoTemporal = true;
+                    ViewBag.CodigoUsuario = codigoBuscado;
+                    return View();
+                }
+
+                destinoOtp = correoTemporal;
+            }
+
+            // Para cuentas normales se utiliza el correo registrado.
+            // Para cuentas .test se utiliza el destino temporal.
+            await _otpService.GenerarYEnviarOtpAsync(
+                usuario,
+                "RESTABLECER_PASSWORD",
+                destinoOtp);
+
+            HttpContext.Session.SetInt32(
+                "UsuarioID_PendienteOTP", usuario.UsuarioID);
+
+            HttpContext.Session.SetString(
+                "Correo_PendienteOTP",
+                destinoOtp ?? usuario.Correo);
+
+            HttpContext.Session.SetString(
+                "TipoOtpPendiente", "RESTABLECER_PASSWORD");
+
+            HttpContext.Session.SetString(
+                "FlujoRestablecer", "TRUE");
+
+            HttpContext.Session.Remove("FlujoRestablecerVerificado");
+
+            return RedirectToAction(nameof(VerificarOtp));
+        }
+
+
+
+
+
         // GET: /Cuenta/VerificarOtp
         [HttpGet]
         [Route("Cuenta/VerificarOtp")]
         [Route("Cuenta/ConfirmarOtp")]
         public IActionResult VerificarOtp()
         {
-            var correo = HttpContext.Session.GetString("Correo_PendienteOTP");
-            if (string.IsNullOrEmpty(correo)) return RedirectToAction(nameof(Login));
+            var correo = HttpContext.Session.GetString(
+                "Correo_PendienteOTP");
+
+            var tipoAccion = HttpContext.Session.GetString(
+                "TipoOtpPendiente");
+
+            if (string.IsNullOrEmpty(correo) ||
+                string.IsNullOrEmpty(tipoAccion))
+            {
+                return RedirectToAction(nameof(Login));
+            }
 
             ViewBag.Correo = correo;
+            ViewBag.EsRecuperacion =
+                tipoAccion == "RESTABLECER_PASSWORD";
+
             return View("VerificarOtp");
         }
 
@@ -207,98 +379,168 @@ namespace EcoVidaGlobal.Controllers
         [Route("Cuenta/ConfirmarOtp")]
         public async Task<IActionResult> VerificarOtp(string codigo)
         {
-            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID_PendienteOTP");
-            if (!usuarioId.HasValue) return RedirectToAction(nameof(Login));
+            int? usuarioId = HttpContext.Session.GetInt32(
+                "UsuarioID_PendienteOTP");
 
-            var resultado = await _otpService.ValidarOtpAsync(usuarioId.Value, codigo, "REGISTRO");
-            if (!resultado.Exito) resultado = await _otpService.ValidarOtpAsync(usuarioId.Value, codigo, "LOGIN");
-            if (!resultado.Exito) resultado = await _otpService.ValidarOtpAsync(usuarioId.Value, codigo, "REGISTRO_GOOGLE");
-            if (!resultado.Exito) resultado = await _otpService.ValidarOtpAsync(usuarioId.Value, codigo, "LOGIN_GOOGLE");
-            if (!resultado.Exito) resultado = await _otpService.ValidarOtpAsync(usuarioId.Value, codigo, "RESTABLECER_PASSWORD");
+            string? tipoAccion = HttpContext.Session.GetString(
+                "TipoOtpPendiente");
+
+            if (!usuarioId.HasValue ||
+                string.IsNullOrEmpty(tipoAccion))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var resultado = await _otpService.ValidarOtpAsync(
+                usuarioId.Value,
+                codigo,
+                tipoAccion);
 
             if (!resultado.Exito)
             {
                 ViewBag.Error = resultado.Mensaje;
-                ViewBag.Correo = HttpContext.Session.GetString("Correo_PendienteOTP");
+                ViewBag.Correo = HttpContext.Session.GetString(
+                    "Correo_PendienteOTP");
+                ViewBag.EsRecuperacion =
+                    tipoAccion == "RESTABLECER_PASSWORD";
+
                 return View("VerificarOtp");
             }
 
-            var usuario = await _context.Usuarios.Include(u => u.Rol).FirstOrDefaultAsync(u => u.UsuarioID == usuarioId.Value);
-            if (usuario == null) return RedirectToAction(nameof(Login));
+            var usuario = await _context.Usuarios
+                .Include(u => u.Rol)
+                .FirstOrDefaultAsync(
+                    u => u.UsuarioID == usuarioId.Value);
 
-            // Si vino por restablecimiento de contraseña -> Redirigir a la vista de nueva clave
-            if (HttpContext.Session.GetString("FlujoRestablecer") == "TRUE")
+            if (usuario == null)
             {
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (tipoAccion == "RESTABLECER_PASSWORD")
+            {
+                HttpContext.Session.SetString(
+                    "FlujoRestablecerVerificado", "TRUE");
+
                 HttpContext.Session.Remove("FlujoRestablecer");
+
                 return RedirectToAction(nameof(RestablecerPassword));
             }
 
             usuario.EstadoCuenta = "Activo";
             await _context.SaveChangesAsync();
 
-            // Iniciar Sesión
-            HttpContext.Session.SetInt32("UsuarioID", usuario.UsuarioID);
-            HttpContext.Session.SetString("UsuarioNombre", usuario.NombreCompleto);
-            HttpContext.Session.SetString("UsuarioRol", usuario.Rol?.NombreRol ?? "Cliente");
-            HttpContext.Session.SetInt32("UsuarioRolID", usuario.RolID);
+            HttpContext.Session.SetInt32(
+                "UsuarioID", usuario.UsuarioID);
+
+            HttpContext.Session.SetString(
+                "UsuarioNombre", usuario.NombreCompleto);
+
+            HttpContext.Session.SetString(
+                "UsuarioRol",
+                usuario.Rol?.NombreRol ?? "Cliente");
+
+            HttpContext.Session.SetInt32(
+                "UsuarioRolID", usuario.RolID);
 
             HttpContext.Session.Remove("UsuarioID_PendienteOTP");
             HttpContext.Session.Remove("Correo_PendienteOTP");
+            HttpContext.Session.Remove("TipoOtpPendiente");
 
-            return RedirectToAction("Index", "Producto");
+            return RedirigirPorRol(usuario.RolID);
         }
 
-        // GET: /Cuenta/OlvidePassword
-        public IActionResult OlvidePassword() => View();
 
-        // POST: /Cuenta/OlvidePassword
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> OlvidePassword(string correo)
-        {
-            var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == correo);
-            if (usuario != null)
-            {
-                await _otpService.GenerarYEnviarOtpAsync(usuario, "RESTABLECER_PASSWORD");
-                HttpContext.Session.SetInt32("UsuarioID_PendienteOTP", usuario.UsuarioID);
-                HttpContext.Session.SetString("Correo_PendienteOTP", usuario.Correo);
-                HttpContext.Session.SetString("FlujoRestablecer", "TRUE");
-
-                return RedirectToAction(nameof(VerificarOtp));
-            }
-            ViewBag.Error = "No existe una cuenta registrada con ese correo.";
-            return View();
-        }
 
         // GET: /Cuenta/RestablecerPassword
+        [HttpGet]
         public IActionResult RestablecerPassword()
         {
-            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID_PendienteOTP");
-            if (!usuarioId.HasValue) return RedirectToAction(nameof(Login));
+            if (HttpContext.Session.GetString(
+                    "FlujoRestablecerVerificado") != "TRUE" ||
+                !HttpContext.Session.GetInt32(
+                    "UsuarioID_PendienteOTP").HasValue)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
             return View();
         }
 
         // POST: /Cuenta/RestablecerPassword
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RestablecerPassword(string nuevaPassword)
+        public async Task<IActionResult> RestablecerPassword(
+            string nuevaPassword)
         {
-            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID_PendienteOTP");
-            if (!usuarioId.HasValue) return RedirectToAction(nameof(Login));
-
-            var usuario = await _context.Usuarios.FindAsync(usuarioId.Value);
-            if (usuario != null)
+            if (HttpContext.Session.GetString(
+                    "FlujoRestablecerVerificado") != "TRUE")
             {
-                usuario.PasswordHash = PasswordHasherUtil.HashPassword(usuario, nuevaPassword);
-                await _context.SaveChangesAsync();
-
-                HttpContext.Session.Remove("UsuarioID_PendienteOTP");
-                HttpContext.Session.Remove("Correo_PendienteOTP");
-
-                return RedirectToAction(nameof(Login), new { mensaje = "Contraseña actualizada con éxito. Inicia sesión." });
+                return RedirectToAction(nameof(Login));
             }
 
-            return RedirectToAction(nameof(Login));
+            int? usuarioId = HttpContext.Session.GetInt32(
+                "UsuarioID_PendienteOTP");
+
+            if (!usuarioId.HasValue)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (string.IsNullOrWhiteSpace(nuevaPassword) ||
+                nuevaPassword.Length < 6)
+            {
+                ViewBag.Error =
+                    "La contraseña debe tener al menos 6 caracteres.";
+
+                return View();
+            }
+
+            var usuario = await _context.Usuarios.FindAsync(
+                usuarioId.Value);
+
+            if (usuario == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            usuario.PasswordHash =
+                PasswordHasherUtil.HashPassword(
+                    usuario, nuevaPassword);
+
+            await _context.SaveChangesAsync();
+
+            HttpContext.Session.Remove("UsuarioID_PendienteOTP");
+            HttpContext.Session.Remove("Correo_PendienteOTP");
+            HttpContext.Session.Remove("TipoOtpPendiente");
+            HttpContext.Session.Remove("FlujoRestablecer");
+            HttpContext.Session.Remove("FlujoRestablecerVerificado");
+
+            return RedirectToAction(
+                nameof(Login),
+                new { mensaje = "Contraseña actualizada correctamente." });
+        }
+
+
+        // GET: /Cuenta/MisPedidos
+        [HttpGet]
+        public async Task<IActionResult> MisPedidos()
+        {
+            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
+
+            if (!usuarioId.HasValue)
+            {
+                return RedirectToAction("Login", "Cuenta", new { mensaje = "Debes iniciar sesión para consultar tus pedidos." });
+            }
+
+            var pedidos = await _context.Pedidos
+                .Include(p => p.Detalles)
+                    .ThenInclude(d => d.Producto)
+                .Where(p => p.UsuarioID == usuarioId.Value)
+                .OrderByDescending(p => p.FechaPedido)
+                .ToListAsync();
+
+            return View(pedidos);
         }
 
         // GET: /Cuenta/Logout
@@ -306,7 +548,88 @@ namespace EcoVidaGlobal.Controllers
         {
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Login", "Cuenta");
         }
+
+        //EstadoPago
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmarPago(int pedidoId)
+        {
+            // Comprobar que el usuario haya iniciado sesión.
+            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
+
+            if (!usuarioId.HasValue)
+            {
+                return RedirectToAction("Login", "Cuenta");
+            }
+
+            // Buscar únicamente un pedido que pertenezca al usuario conectado.
+            var pedido = await _context.Pedidos
+                .FirstOrDefaultAsync(p =>
+                    p.PedidoID == pedidoId &&
+                    p.UsuarioID == usuarioId.Value);
+
+            if (pedido == null)
+            {
+                return NotFound();
+            }
+
+            // No permitir confirmar el pago de un pedido cancelado.
+            if (pedido.Estado == "Cancelado")
+            {
+                TempData["MensajePago"] =
+                    "No se puede confirmar el pago de un pedido cancelado.";
+
+                return RedirectToAction(nameof(MisPedidos));
+            }
+
+            // Actualizar el estado del pago en la base de datos.
+            if (pedido.EstadoPago != "Pagado")
+            {
+                pedido.EstadoPago = "Pagado";
+                pedido.FechaPago = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                TempData["MensajePago"] =
+                    "Pago confirmado en la simulación académica.";
+            }
+
+            return RedirectToAction(nameof(MisPedidos));
+        }
+
+
+        //GenerarCodigoUsuario:
+        private async Task<string> GenerarCodigoUsuarioAsync()
+        {
+            var codigosExistentes = await _context.Usuarios
+                .Select(u => u.CodigoUsuario)
+                .ToListAsync();
+
+            var numerosUsados = new HashSet<int>();
+
+            foreach (var codigo in codigosExistentes)
+            {
+                if (codigo != null &&
+                    codigo.StartsWith("EVG-", StringComparison.OrdinalIgnoreCase) &&
+                    int.TryParse(codigo.Substring(4), out int numero))
+                {
+                    numerosUsados.Add(numero);
+                }
+            }
+
+            int siguiente = 1;
+
+            while (numerosUsados.Contains(siguiente))
+            {
+                siguiente++;
+            }
+
+            return $"EVG-{siguiente:D2}";
+        }
+
+
+
     }
 }

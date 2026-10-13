@@ -1,0 +1,320 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Producto>
+@using EcoVidaGlobal.Models
+
+@{
+    Layout = "~/Views/Shared/_LayoutAlmacen.cshtml";
+    ViewData["Title"] = "Control de Inventario";
+
+    var solicitudes = ViewBag.SolicitudesReposicion
+        as List<SolicitudReposicion>
+        ?? new List<SolicitudReposicion>();
+}
+
+<h3 class="fw-bold mb-4">
+    <i class="bi bi-boxes text-dark me-2"></i>
+    Control de Stock de Inventario
+</h3>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Mensaje"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- INVENTARIO DE PRODUCTOS -->
+<div class="card p-4 shadow-sm border-0 bg-white mb-4">
+    <h5 class="fw-bold mb-3">Inventario de productos</h5>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>SKU</th>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Precio unit.</th>
+                    <th>Stock tienda</th>
+                    <th>Stock almacén</th>
+                    <th style="min-width: 250px;">Enviar a la tienda</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">
+                            #PROD-@p.ProductoID.ToString("D4")
+                        </td>
+                        <td>@p.Nombre</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                @(p.Categoria?.Nombre ?? "General")
+                            </span>
+                        </td>
+                        <td>S/ @p.Precio.ToString("F2")</td>
+                        <td>
+                            @if (p.Stock == 0)
+                            {
+                                <span class="badge bg-danger">Agotado (0)</span>
+                            }
+                            else if (p.Stock <= 10)
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    Bajo (@p.Stock)
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">
+                                    Disponible (@p.Stock)
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            @if (p.StockAlmacen == 0)
+                            {
+                                <span class="badge bg-secondary">
+                                    Sin existencias (0)
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-primary">
+                                    @p.StockAlmacen unidades
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            @if (p.StockAlmacen > 0)
+                            {
+                                <form asp-controller="Almacen"
+                                      asp-action="TransferirATienda"
+                                      method="post"
+                                      class="d-flex gap-2">
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden"
+                                           name="productoId"
+                                           value="@p.ProductoID" />
+
+                                    <input type="number"
+                                           name="cantidad"
+                                           class="form-control form-control-sm"
+                                           min="1"
+                                           max="@p.StockAlmacen"
+                                           step="1"
+                                           value="1"
+                                           required
+                                           aria-label="Cantidad a enviar a la tienda" />
+
+                                    <button type="submit"
+                                            class="btn btn-success btn-sm text-nowrap">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>
+                                        Enviar
+                                    </button>
+                                </form>
+
+                                <small class="text-muted">
+                                    Máximo: @p.StockAlmacen unidades
+                                </small>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">
+                                    No hay unidades para transferir
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info mb-0">
+            No hay productos registrados en el inventario.
+        </div>
+    }
+</div>
+
+<!-- SOLICITUDES DE REPOSICIÓN -->
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <h5 class="fw-bold mb-2">
+        <i class="bi bi-truck me-2"></i>
+        Reposiciones de mercancía
+    </h5>
+
+    <p class="text-muted">
+        Confirma las compras aprobadas y registra la recepción de las unidades.
+    </p>
+
+    @if (!solicitudes.Any())
+    {
+        <div class="alert alert-info mb-0">
+            No hay solicitudes aprobadas o en proceso de entrega.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Solicitud</th>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Monto estimado</th>
+                        <th>Estado</th>
+                        <th>Entrega</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in solicitudes)
+                    {
+                        <tr>
+                            <td>#@s.SolicitudID</td>
+
+                            <td>
+                                @(s.Producto?.Nombre ?? $"Producto #{s.ProductoID}")
+                            </td>
+
+                            <td>@s.CantidadSolicitada</td>
+
+                            <td>S/ @s.MontoEstimado.ToString("N2")</td>
+
+                            <td>
+                                @if (s.Estado == "Aprobada")
+                                {
+                                    <span class="badge bg-primary">Aprobada</span>
+                                }
+                                else if (s.Estado == "EnTransito")
+                                {
+                                    <span class="badge bg-warning text-dark">En tránsito</span>
+                                }
+                                else if (s.Estado == "Recibida")
+                                {
+                                    <span class="badge bg-success">Recibida</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@s.Estado</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (s.Estado == "EnTransito"
+                                                        && s.FechaInicioEntrega.HasValue)
+                                {
+                                    <span class="cuenta-entrega"
+                                          data-inicio="@s.FechaInicioEntrega.Value.ToString("o")">
+                                        Calculando...
+                                    </span>
+                                }
+                                else if (s.Estado == "Recibida")
+                                {
+                                    <span>Mercancía recibida</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        Pendiente de confirmar compra
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (s.Estado == "Aprobada")
+                                {
+                                    <form asp-controller="Almacen"
+                                          asp-action="ConfirmarCompra"
+                                          method="post"
+                                          onsubmit="return confirm('¿Confirmas la compra y el registro del gasto?');">
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="solicitudId"
+                                               value="@s.SolicitudID" />
+
+                                        <button type="submit"
+                                                class="btn btn-primary btn-sm text-nowrap">
+                                            Confirmar compra
+                                        </button>
+                                    </form>
+                                }
+                                else if (s.Estado == "EnTransito")
+                                {
+                                    <form asp-controller="Almacen"
+                                          asp-action="RecibirSolicitud"
+                                          method="post">
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="solicitudId"
+                                               value="@s.SolicitudID" />
+
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm boton-recepcion"
+                                                disabled>
+                                            Registrar recepción
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">
+                                        Sin acciones
+                                    </span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        function actualizarEntregas() {
+            document.querySelectorAll(".cuenta-entrega").forEach(function (elemento) {
+                const inicio = new Date(elemento.dataset.inicio).getTime();
+                const transcurrido = (Date.now() - inicio) / 1000;
+                const restante = Math.max(0, Math.ceil(30 - transcurrido));
+
+                const fila = elemento.closest("tr");
+                const boton = fila.querySelector(".boton-recepcion");
+
+                if (restante > 0) {
+                    elemento.textContent = "Entrega en " + restante + " s";
+
+                    if (boton) {
+                        boton.disabled = true;
+                    }
+                } else {
+                    elemento.textContent = "Entrega disponible";
+
+                    if (boton) {
+                        boton.disabled = false;
+                    }
+                }
+            });
+        }
+
+        actualizarEntregas();
+        setInterval(actualizarEntregas, 500);
+    });
+</script>

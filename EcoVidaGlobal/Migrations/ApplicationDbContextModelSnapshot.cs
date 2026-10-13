@@ -42,7 +42,7 @@ namespace EcoVidaGlobal.Migrations
 
                     b.HasKey("CategoriaID");
 
-                    b.ToTable("Categorias");
+                    b.ToTable("Categorias", (string)null);
                 });
 
             modelBuilder.Entity("EcoVidaGlobal.Models.DetallePedido", b =>
@@ -71,7 +71,7 @@ namespace EcoVidaGlobal.Migrations
 
                     b.HasIndex("ProductoID");
 
-                    b.ToTable("DetallePedidos");
+                    b.ToTable("DetallePedidos", (string)null);
                 });
 
             modelBuilder.Entity("EcoVidaGlobal.Models.Pedido", b =>
@@ -100,7 +100,7 @@ namespace EcoVidaGlobal.Migrations
 
                     b.HasIndex("UsuarioID");
 
-                    b.ToTable("Pedidos");
+                    b.ToTable("Pedidos", (string)null);
                 });
 
             modelBuilder.Entity("EcoVidaGlobal.Models.Producto", b =>
@@ -136,7 +136,7 @@ namespace EcoVidaGlobal.Migrations
 
                     b.HasIndex("CategoriaID");
 
-                    b.ToTable("Productos");
+                    b.ToTable("Productos", (string)null);
                 });
 
             modelBuilder.Entity("EcoVidaGlobal.Models.Rol", b =>
@@ -153,7 +153,7 @@ namespace EcoVidaGlobal.Migrations
 
                     b.HasKey("RolID");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("EcoVidaGlobal.Models.Usuario", b =>
@@ -202,7 +202,7 @@ namespace EcoVidaGlobal.Migrations
 
                     b.HasIndex("RolID");
 
-                    b.ToTable("Usuarios");
+                    b.ToTable("Usuarios", (string)null);
                 });
 
             modelBuilder.Entity("EcoVidaGlobal.Models.VerificationCode", b =>
@@ -245,7 +245,7 @@ namespace EcoVidaGlobal.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("VerificationCodes");
+                    b.ToTable("VerificationCodes", (string)null);
                 });
 
             modelBuilder.Entity("EcoVidaGlobal.Models.DetallePedido", b =>

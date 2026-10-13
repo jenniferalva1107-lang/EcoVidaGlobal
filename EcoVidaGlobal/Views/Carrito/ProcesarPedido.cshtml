@@ -1,0 +1,305 @@
+﻿@model List<EcoVidaGlobal.Models.CarritoItem>
+
+@{
+    ViewData["Title"] = "Modalidad de Entrega y Pago";
+    Layout = "~/Views/Shared/_LayoutCliente.cshtml";
+
+    decimal subtotal = Model.Sum(i => i.Subtotal);
+    decimal costoEnvio = subtotal > 100m ? 0m : 10m;
+    decimal total = subtotal + costoEnvio;
+}
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="container my-4">
+    <div class="row g-4">
+
+        <div class="col-md-7">
+            <h3 class="fw-bold text-success mb-3">
+                Modalidad de Entrega y Pago
+            </h3>
+
+            @if (ViewBag.ErrorCheckout != null)
+            {
+                <div class="alert alert-danger">
+                    @ViewBag.ErrorCheckout
+                </div>
+            }
+
+            <form asp-controller="Carrito"
+                  asp-action="ConfirmarPedido"
+                  method="post"
+                  autocomplete="off">
+
+                @Html.AntiForgeryToken()
+
+                <div class="card p-4 mb-3 shadow-sm border-0 rounded-4">
+                    <h5 class="fw-bold text-success mb-3">
+                        🚚 Tipo de Entrega
+                    </h5>
+
+                    <div class="form-check my-2">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="tipoEntrega"
+                               id="envioDomicilio"
+                               value="Domicilio"
+                               checked />
+
+                        <label class="form-check-label fw-bold"
+                               for="envioDomicilio">
+                            Envío a domicilio
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="direccion"
+                               class="form-label fw-semibold">
+                            Dirección exacta
+                        </label>
+
+                        <input type="text"
+                               id="direccion"
+                               name="direccion"
+                               class="form-control rounded-3"
+                               placeholder="Calle, avenida o jirón y número"
+                               required />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label for="distrito"
+                                   class="form-label fw-semibold">
+                                Ciudad / Distrito
+                            </label>
+
+                            <input type="text"
+                                   id="distrito"
+                                   name="distrito"
+                                   class="form-control rounded-3"
+                                   placeholder="Ej. San Luis"
+                                   required />
+                        </div>
+
+                        <div class="col-6 mb-3">
+                            <label for="telefono"
+                                   class="form-label fw-semibold">
+                                Teléfono celular
+                            </label>
+
+                            <input type="tel"
+                                   id="telefono"
+                                   name="telefono"
+                                   class="form-control rounded-3"
+                                   placeholder="Ej. 987654321"
+                                   required />
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <label class="form-label fw-semibold">
+                            Ubicación aproximada en el mapa
+                        </label>
+
+                        <div id="mapa"
+                             style="height:220px;border-radius:12px;z-index:1;"
+                             class="shadow-sm border">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-4 mb-4 shadow-sm border-0 rounded-4">
+                    <h5 class="fw-bold text-success mb-3">
+                        💳 Método de Pago
+                    </h5>
+
+                    <div class="form-check my-2 p-3 border rounded-3 bg-light">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="metodoPago"
+                               id="pagoYape"
+                               value="Yape / Plin"
+                               checked />
+
+                        <label class="form-check-label fw-bold"
+                               for="pagoYape">
+                            📱 Yape / Plin
+                        </label>
+                    </div>
+
+                    <div class="form-check my-2 p-3 border rounded-3">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="metodoPago"
+                               id="pagoTarjeta"
+                               value="Tarjeta de Crédito/Débito" />
+
+                        <label class="form-check-label fw-bold"
+                               for="pagoTarjeta">
+                            💳 Tarjeta de crédito o débito
+                        </label>
+                    </div>
+
+                    <div class="form-check my-2 p-3 border rounded-3">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="metodoPago"
+                               id="pagoEfectivo"
+                               value="Pago Contra Entrega" />
+
+                        <label class="form-check-label fw-bold"
+                               for="pagoEfectivo">
+                            💵 Pago contra entrega
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-success btn-lg w-100 fw-bold py-3">
+                    Confirmar pedido →
+                </button>
+            </form>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card p-4 shadow-sm bg-light border-0 rounded-4 sticky-top"
+                 style="top:20px;">
+
+                <h5 class="fw-bold text-secondary mb-3">
+                    Resumen del pedido
+                </h5>
+
+                <hr />
+
+                @foreach (var item in Model)
+                {
+                    <div class="d-flex justify-content-between gap-3 mb-3">
+                        <div>
+                            <div class="fw-semibold">
+                                @item.Nombre
+                            </div>
+
+                            <small class="text-muted">
+                                @item.Cantidad × S/ @item.Precio.ToString("F2")
+                            </small>
+                        </div>
+
+                        <span class="text-nowrap">
+                            S/ @item.Subtotal.ToString("F2")
+                        </span>
+                    </div>
+                }
+
+                <hr />
+
+                <p class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal</span>
+                    <span class="fw-bold">
+                        S/ @subtotal.ToString("F2")
+                    </span>
+                </p>
+
+                <p class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Costo de envío</span>
+                    <span class="fw-bold">
+                        S/ @costoEnvio.ToString("F2")
+                    </span>
+                </p>
+
+                @if (subtotal > 100m)
+                {
+                    <small class="text-success mb-2">
+                        ¡Tu compra tiene envío gratis!
+                    </small>
+                }
+
+                <hr />
+
+                <h4 class="d-flex justify-content-between fw-bold text-success m-0">
+                    <span>Total</span>
+                    <span>S/ @total.ToString("F2")</span>
+                </h4>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const mapaElemento = document.getElementById("mapa");
+
+        if (!mapaElemento || typeof L === "undefined") {
+            return;
+        }
+
+        const lat = -12.046374;
+        const lng = -77.042793;
+
+        const mapa = L.map("mapa").setView([lat, lng], 13);
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+                attribution: "© OpenStreetMap"
+            }
+        ).addTo(mapa);
+
+        const marcador = L.marker([lat, lng], {
+            draggable: true
+        }).addTo(mapa);
+
+        mapa.on("click", function (e) {
+            marcador.setLatLng(e.latlng);
+        });
+
+        const direccion = document.getElementById("direccion");
+        const distrito = document.getElementById("distrito");
+
+        let temporizador = null;
+
+        async function buscarUbicacion() {
+            const dir = direccion.value.trim();
+            const dis = distrito.value.trim();
+
+            if (dir.length < 5) {
+                return;
+            }
+
+            const consulta = [dir, dis, "Lima", "Peru"]
+                .filter(Boolean)
+                .join(", ");
+
+            try {
+                const url =
+                    "https://nominatim.openstreetmap.org/search?format=json&q=" +
+                    encodeURIComponent(consulta);
+
+                const respuesta = await fetch(url);
+                const datos = await respuesta.json();
+
+                if (datos.length > 0) {
+                    const nuevaLat = parseFloat(datos[0].lat);
+                    const nuevaLng = parseFloat(datos[0].lon);
+
+                    mapa.setView([nuevaLat, nuevaLng], 16);
+                    marcador.setLatLng([nuevaLat, nuevaLng]);
+                }
+            } catch (error) {
+                console.error("No se pudo buscar la dirección:", error);
+            }
+        }
+
+        function programarBusqueda() {
+            clearTimeout(temporizador);
+            temporizador = setTimeout(buscarUbicacion, 800);
+        }
+
+        direccion.addEventListener("change", programarBusqueda);
+        distrito.addEventListener("change", programarBusqueda);
+    });
+</script>

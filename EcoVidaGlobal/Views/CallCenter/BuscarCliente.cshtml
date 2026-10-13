@@ -1,0 +1,54 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Usuario>
+@{
+    Layout = "~/Views/Shared/_LayoutCallCenter.cshtml";
+    ViewData["Title"] = "Buscar Cliente";
+}
+
+<h3 class="fw-bold mb-4"><i class="bi bi-search text-primary me-2"></i>Búsqueda de Clientes</h3>
+
+<div class="card p-4 shadow-sm border-0 bg-white mb-4">
+    <form method="get" action="/CallCenter/BuscarCliente" class="row g-2">
+        <div class="col-md-10">
+            <input type="text" name="criterio" value="@ViewBag.Criterio" class="form-control form-control-lg" placeholder="Ingresa Nombre, Correo, DNI o Teléfono..." />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold"><i class="bi bi-search me-1"></i> Buscar</button>
+        </div>
+    </form>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="card p-4 shadow-sm border-0 bg-white">
+        <h5 class="fw-bold mb-3">Resultados de Búsqueda</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>DNI</th>
+                        <th>Nombre Completo</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td>@(c.DNI ?? "N/A")</td>
+                            <td class="fw-bold">@c.NombreCompleto</td>
+                            <td>@c.Correo</td>
+                            <td>@(c.Telefono ?? "N/A")</td>
+                            <td><span class="badge bg-success">@c.EstadoCuenta</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (!string.IsNullOrEmpty(ViewBag.Criterio))
+{
+    <div class="alert alert-warning fw-bold">No se encontraron clientes que coincidan con el criterio buscado.</div>
+}

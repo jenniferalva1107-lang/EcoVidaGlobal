@@ -1,0 +1,162 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Producto>
+
+@{
+    Layout = "~/Views/Shared/_LayoutAlmacen.cshtml";
+    ViewData["Title"] = "Alertas de Reposición";
+}
+
+<h3 class="fw-bold mb-4">
+    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+    Alertas de Reposición por Stock Crítico
+</h3>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Mensaje"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <h5 class="fw-bold text-danger mb-3">
+        Productos que requieren reposición
+    </h5>
+
+    <p class="text-muted">
+        Se muestran productos con 10 unidades o menos en la tienda.
+        La solicitud mínima es de 10 unidades y requiere aprobación de contabilidad.
+    </p>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Stock tienda</th>
+                    <th>Estado</th>
+                    <th style="min-width: 320px;">Solicitar reposición</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">@p.Nombre</td>
+
+                        <td>@(p.Categoria?.Nombre ?? "General")</td>
+
+                        <td class="fw-bold @(p.Stock == 0 ? "text-danger" : "text-warning")">
+                            @p.Stock unidades
+                        </td>
+
+                        <td>
+                            @if (p.Stock == 0)
+                            {
+                                <span class="badge bg-danger">Agotado</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Stock bajo</span>
+                            }
+                        </td>
+
+                        <td>
+                            <form asp-controller="Almacen"
+                                  asp-action="CrearSolicitudReposicion"
+                                  method="post">
+
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden"
+                                       name="productoId"
+                                       value="@p.ProductoID" />
+
+                                <div class="input-group input-group-sm">
+                                    <input type="number"
+                                           name="cantidadSolicitada"
+                                           class="form-control"
+                                           min="10"
+                                           step="1"
+                                           value="10"
+                                           required
+                                           aria-label="Cantidad a solicitar"
+                                           onchange="calcularEstimacion(this)"
+                                           oninput="calcularEstimacion(this)"
+                                           data-precio="@p.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture)" />
+
+                                    <button type="submit"
+                                            class="btn btn-success fw-bold">
+                                        <i class="bi bi-send me-1"></i>
+                                        Solicitar
+                                    </button>
+                                </div>
+
+                                <div class="small text-muted mt-2 estimacion">
+                                    <div>Proveedor: EcoStore</div>
+                                    <div>Descuento: <span class="descuento">5</span>%</div>
+                                    <div>
+                                        Total estimado:
+                                        S/ <span class="total-estimado">@((p.Precio * 10m * 0.95m).ToString("F2"))</span>
+                                    </div>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-success mb-0">
+            No hay productos que requieran reposición en este momento.
+        </div>
+    }
+</div>
+
+<script>
+    function calcularEstimacion(input) {
+        const cantidad = parseInt(input.value, 10);
+        const precio = parseFloat(input.dataset.precio);
+        const contenedor = input.closest('form');
+
+        const descuentoElemento = contenedor.querySelector('.descuento');
+        const totalElemento = contenedor.querySelector('.total-estimado');
+
+        if (!Number.isInteger(cantidad) || cantidad < 10 || !Number.isFinite(precio)) {
+            descuentoElemento.textContent = '—';
+            totalElemento.textContent = '—';
+            return;
+        }
+
+        let descuento;
+
+        if (cantidad < 20) {
+            descuento = 5;
+        } else if (cantidad < 50) {
+            descuento = 10;
+        } else {
+            descuento = 20;
+        }
+
+        const total = precio * cantidad * (1 - descuento / 100);
+
+        descuentoElemento.textContent = descuento;
+        totalElemento.textContent = total.toLocaleString('es-PE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+</script>

@@ -1,0 +1,405 @@
+﻿@using System.Text.Json
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Dashboard Administrador";
+
+    // Convertir los datos del controlador a tipos explícitos
+    // antes de enviarlos a JavaScript.
+    var ventasLabelsJson = JsonSerializer.Serialize(
+        (string[])ViewBag.VentasMensualesLabels);
+
+    var ventasValoresJson = JsonSerializer.Serialize(
+        (decimal[])ViewBag.VentasMensualesValores);
+
+    var pedidosPendientesJson = JsonSerializer.Serialize(
+        (int)ViewBag.PedidosPendientes);
+
+    var pedidosCompletadosJson = JsonSerializer.Serialize(
+        (int)ViewBag.PedidosCompletados);
+
+    var clientesLabelsJson = JsonSerializer.Serialize(
+        (string[])ViewBag.NuevosClientesLabels);
+
+    var clientesValoresJson = JsonSerializer.Serialize(
+        (int[])ViewBag.NuevosClientesValores);
+
+    // Estos datos todavía no los genera el controlador.
+    // Por eso se utilizan listas vacías como valor predeterminado.
+    var productosLabelsJson = JsonSerializer.Serialize(
+        ViewBag.TopProductosLabels as string[] ?? Array.Empty<string>());
+
+    var productosValoresJson = JsonSerializer.Serialize(
+        ViewBag.TopProductosValores as int[] ?? Array.Empty<int>());
+
+    var categoriasLabelsJson = JsonSerializer.Serialize(
+        ViewBag.CategoriasLabels as string[] ?? Array.Empty<string>());
+
+    var categoriasValoresJson = JsonSerializer.Serialize(
+        ViewBag.CategoriasValores as int[] ?? Array.Empty<int>());
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold text-dark">
+        <i class="bi bi-speedometer2 text-success me-2"></i>
+        Dashboard General
+    </h3>
+    <span class="badge bg-success px-3 py-2 fs-6">
+        Administrador General
+    </span>
+</div>
+
+<!-- INDICADORES GENERALES -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-success">
+            <small class="text-muted fw-bold">VENTAS DEL DÍA</small>
+            <h3 class="fw-bold text-dark mt-1">
+                S/ @(((decimal)ViewBag.VentasDia).ToString("N2"))
+            </h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-primary">
+            <small class="text-muted fw-bold">VENTAS DEL MES</small>
+            <h3 class="fw-bold text-dark mt-1">
+                S/ @(((decimal)ViewBag.VentasMes).ToString("N2"))
+            </h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-warning">
+            <small class="text-muted fw-bold">PEDIDOS PENDIENTES</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.PedidosPendientes</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-info">
+            <small class="text-muted fw-bold">PEDIDOS COMPLETADOS</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.PedidosCompletados</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-secondary">
+            <small class="text-muted fw-bold">CLIENTES REGISTRADOS</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.ClientesRegistrados</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-dark">
+            <small class="text-muted fw-bold">PRODUCTOS REGISTRADOS</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.ProductosRegistrados</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-warning">
+            <small class="text-muted fw-bold">PRODUCTOS CON STOCK BAJO</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.ProductosStockBajo</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card card-stat bg-white p-3 shadow-sm border-start border-4 border-danger">
+            <small class="text-muted fw-bold">PRODUCTOS AGOTADOS</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.ProductosAgotados</h3>
+        </div>
+    </div>
+</div>
+
+<!-- GRÁFICOS -->
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card p-3 shadow-sm border-0 h-100">
+            <h6 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-graph-up me-2"></i>
+                Ventas mensuales del año actual
+            </h6>
+            <div style="position: relative; height: 300px;">
+                <canvas id="chartVentas"></canvas>
+                <p id="sinDatosVentas"
+                   class="text-muted text-center d-none position-absolute top-50 start-50 translate-middle">
+                    No hay ventas registradas para mostrar.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-0 h-100">
+            <h6 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-pie-chart me-2"></i>
+                Pedidos por estado
+            </h6>
+            <div style="position: relative; height: 300px;">
+                <canvas id="chartPedidos"></canvas>
+                <p id="sinDatosPedidos"
+                   class="text-muted text-center d-none position-absolute top-50 start-50 translate-middle">
+                    No hay pedidos registrados.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-0 h-100">
+            <h6 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-trophy me-2"></i>
+                Productos más vendidos
+            </h6>
+            <div style="position: relative; height: 280px;">
+                <canvas id="chartTopProductos"></canvas>
+                <p id="sinDatosProductos"
+                   class="text-muted text-center d-none position-absolute top-50 start-50 translate-middle">
+                    No hay datos de ventas por producto.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-0 h-100">
+            <h6 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-tags me-2"></i>
+                Categorías más vendidas
+            </h6>
+            <div style="position: relative; height: 280px;">
+                <canvas id="chartCategorias"></canvas>
+                <p id="sinDatosCategorias"
+                   class="text-muted text-center d-none position-absolute top-50 start-50 translate-middle">
+                    No hay datos de ventas por categoría.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-0 h-100">
+            <h6 class="fw-bold text-secondary mb-3">
+                <i class="bi bi-person-plus me-2"></i>
+                Nuevos clientes
+            </h6>
+            <div style="position: relative; height: 280px;">
+                <canvas id="chartClientes"></canvas>
+                <p id="sinDatosClientes"
+                   class="text-muted text-center d-none position-absolute top-50 start-50 translate-middle">
+                    No hay nuevos clientes en el periodo.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Datos convertidos a JSON en el bloque Razor superior.
+    const ventasLabels = @Html.Raw(ventasLabelsJson);
+    const ventasValores = @Html.Raw(ventasValoresJson);
+
+    const pedidosPendientes = @Html.Raw(pedidosPendientesJson);
+    const pedidosCompletados = @Html.Raw(pedidosCompletadosJson);
+
+    const clientesLabels = @Html.Raw(clientesLabelsJson);
+    const clientesValores = @Html.Raw(clientesValoresJson);
+
+    const productosLabels = @Html.Raw(productosLabelsJson);
+    const productosValores = @Html.Raw(productosValoresJson);
+
+    const categoriasLabels = @Html.Raw(categoriasLabelsJson);
+    const categoriasValores = @Html.Raw(categoriasValoresJson);
+
+    // Mostrar el gráfico solamente si hay datos útiles.
+    function crearGrafico(idCanvas, idMensaje, configuracion, labels, valores) {
+        const canvas = document.getElementById(idCanvas);
+        const mensaje = document.getElementById(idMensaje);
+
+        const etiquetasValidas =
+            Array.isArray(labels) && labels.length > 0;
+
+        const valoresValidos =
+            Array.isArray(valores) &&
+            valores.some(valor => Number(valor) > 0);
+
+        if (!etiquetasValidas || !valoresValidos) {
+            canvas.classList.add('d-none');
+            mensaje.classList.remove('d-none');
+            return;
+        }
+
+        canvas.classList.remove('d-none');
+        mensaje.classList.add('d-none');
+
+        new Chart(canvas, configuracion);
+    }
+
+    // 1. Ventas mensuales del año actual.
+    crearGrafico(
+        'chartVentas',
+        'sinDatosVentas',
+        {
+            type: 'line',
+            data: {
+                labels: ventasLabels,
+                datasets: [{
+                    label: 'Ventas (S/)',
+                    data: ventasValores,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: valor =>
+                                'S/ ' + Number(valor).toLocaleString('es-PE')
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: contexto =>
+                                'Ventas: S/ ' +
+                                Number(contexto.raw).toLocaleString('es-PE', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })
+                        }
+                    }
+                }
+            }
+        },
+        ventasLabels,
+        ventasValores
+    );
+
+    // 2. Pedidos pendientes frente a completados o entregados.
+    const etiquetasPedidos = [
+        'Pendientes',
+        'Completados o entregados'
+    ];
+
+    const valoresPedidos = [
+        Number(pedidosPendientes),
+        Number(pedidosCompletados)
+    ];
+
+    crearGrafico(
+        'chartPedidos',
+        'sinDatosPedidos',
+        {
+            type: 'doughnut',
+            data: {
+                labels: etiquetasPedidos,
+                datasets: [{
+                    data: valoresPedidos,
+                    backgroundColor: ['#f59e0b', '#10b981']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        },
+        etiquetasPedidos,
+        valoresPedidos
+    );
+
+    // 3. Productos más vendidos.
+    crearGrafico(
+        'chartTopProductos',
+        'sinDatosProductos',
+        {
+            type: 'bar',
+            data: {
+                labels: productosLabels,
+                datasets: [{
+                    label: 'Unidades vendidas',
+                    data: productosValores,
+                    backgroundColor: '#3b82f6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true }
+                }
+            }
+        },
+        productosLabels,
+        productosValores
+    );
+
+    // 4. Categorías más vendidas.
+    crearGrafico(
+        'chartCategorias',
+        'sinDatosCategorias',
+        {
+            type: 'pie',
+            data: {
+                labels: categoriasLabels,
+                datasets: [{
+                    data: categoriasValores,
+                    backgroundColor: [
+                        '#ec4899',
+                        '#8b5cf6',
+                        '#10b981',
+                        '#f59e0b',
+                        '#3b82f6'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        },
+        categoriasLabels,
+        categoriasValores
+    );
+
+    // 5. Nuevos clientes de las últimas cuatro semanas.
+    crearGrafico(
+        'chartClientes',
+        'sinDatosClientes',
+        {
+            type: 'bar',
+            data: {
+                labels: clientesLabels,
+                datasets: [{
+                    label: 'Nuevos clientes',
+                    data: clientesValores,
+                    backgroundColor: '#6366f1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        },
+        clientesLabels,
+        clientesValores
+    );
+</script>

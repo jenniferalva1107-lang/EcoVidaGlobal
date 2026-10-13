@@ -2,182 +2,350 @@
 using Microsoft.EntityFrameworkCore;
 using EcoVidaGlobal.Data;
 using EcoVidaGlobal.Models;
-using EcoVidaGlobal.Extensions;
-using EcoVidaGlobal.Services;
 
 namespace EcoVidaGlobal.Controllers
 {
     public class CarritoController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly EmailService _emailService;
-        private const string CARRITO_SESSION_KEY = "CarritoCompras";
 
-        public CarritoController(ApplicationDbContext context, EmailService emailService)
+        public CarritoController(ApplicationDbContext context)
         {
             _context = context;
-            _emailService = emailService;
         }
 
         // GET: /Carrito
-        public IActionResult Index()
+        [HttpGet]
+        public async Task<IActionResult> Index()
         {
-            var carrito = ObtenerCarrito();
+            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
+
+            if (!usuarioId.HasValue)
+            {
+                return View(new List<CarritoItem>());
+            }
+
+            var carrito = await _context.CarritoItems
+                .Include(c => c.Producto)
+                .Where(c => c.UsuarioID == usuarioId.Value)
+                .ToListAsync();
+
             return View(carrito);
         }
 
         // POST: /Carrito/Agregar
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Agregar(int productoId, int cantidad = 1, string returnUrl = "/Producto")
+        public async Task<IActionResult> Agregar(
+            int productoId,
+            int cantidad = 1)
         {
-            var usuarioNombre = HttpContext.Session.GetString("UsuarioNombre");
-            if (string.IsNullOrEmpty(usuarioNombre))
+            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
+
+            if (!usuarioId.HasValue)
             {
-                return RedirectToAction("Login", "Cuenta", new { mensaje = "Debes Iniciar Sesión primero para realizar tus compras." });
+                return RedirectToAction(
+                    "Login",
+                    "Cuenta",
+                    new
+                    {
+                        mensaje = "Debes iniciar sesión para agregar productos."
+                    });
             }
 
-            var producto = await _context.Productos.FindAsync(productoId);
-            if (producto == null) return NotFound();
+            if (cantidad <= 0)
+            {
+                TempData["ErrorCarrito"] =
+                    "La cantidad solicitada no es válida.";
 
-            var carrito = ObtenerCarrito();
-            var itemExistente = carrito.FirstOrDefault(c => c.ProductoID == productoId);
+                return RedirectToAction(nameof(Index));
+            }
+
+            var producto = await _context.Productos
+                .FirstOrDefaultAsync(p => p.ProductoID == productoId);
+
+            if (producto == null)
+            {
+                TempData["ErrorCarrito"] =
+                    "El producto seleccionado no existe.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (producto.Stock <= 0)
+            {
+                TempData["ErrorCarrito"] =
+                    "Este producto está agotado.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            var itemExistente = await _context.CarritoItems
+                .FirstOrDefaultAsync(c =>
+                    c.UsuarioID == usuarioId.Value &&
+                    c.ProductoID == productoId);
+
+            int cantidadFinal =
+                (itemExistente?.Cantidad ?? 0) + cantidad;
+
+            if (cantidadFinal > producto.Stock)
+            {
+                TempData["ErrorCarrito"] =
+                    $"Solo hay {producto.Stock} unidades disponibles.";
+
+                return RedirectToAction(nameof(Index));
+            }
 
             if (itemExistente != null)
             {
-                itemExistente.Cantidad += cantidad;
+                itemExistente.Cantidad = cantidadFinal;
             }
             else
             {
-                carrito.Add(new ItemCarrito
+                _context.CarritoItems.Add(new CarritoItem
                 {
-                    ProductoID = producto.ProductoID,
-                    Nombre = producto.Nombre,
-                    Precio = producto.Precio,
+                    UsuarioID = usuarioId.Value,
+                    ProductoID = productoId,
                     Cantidad = cantidad,
-                    ImagenUrl = producto.ImagenUrl
+                    FechaAgregado = DateTime.Now
                 });
             }
 
-            GuardarCarrito(carrito);
-            return Redirect(returnUrl);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
         }
 
         // POST: /Carrito/Eliminar
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Eliminar(int productoId, string returnUrl = "/Carrito")
-        {
-            var carrito = ObtenerCarrito();
-            carrito.RemoveAll(c => c.ProductoID == productoId);
-            GuardarCarrito(carrito);
-            return Redirect(returnUrl);
-        }
-
-        // POST: /Carrito/Vaciar
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Vaciar()
-        {
-            HttpContext.Session.Remove(CARRITO_SESSION_KEY);
-            return RedirectToAction("Index", "Producto");
-        }
-
-        // POST: /Carrito/ProcesarPago
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ProcesarPago()
+        public async Task<IActionResult> Eliminar(int productoId)
         {
             int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
-            if (!usuarioId.HasValue)
+
+            if (usuarioId.HasValue)
             {
-                return RedirectToAction("Login", "Cuenta", new { mensaje = "Debes Iniciar Sesión para procesar el pago." });
+                var item = await _context.CarritoItems
+                    .FirstOrDefaultAsync(c =>
+                        c.UsuarioID == usuarioId.Value &&
+                        c.ProductoID == productoId);
+
+                if (item != null)
+                {
+                    _context.CarritoItems.Remove(item);
+                    await _context.SaveChangesAsync();
+                }
             }
 
-            var usuario = await _context.Usuarios.FindAsync(usuarioId.Value);
-            var carrito = ObtenerCarrito();
+            return RedirectToAction(nameof(Index));
+        }
 
-            if (usuario == null || !carrito.Any())
+        // GET: /Carrito/Checkout
+        // GET: /Carrito/ProcesarPedido
+        [HttpGet]
+        [Route("Carrito/Checkout")]
+        [Route("Carrito/ProcesarPedido")]
+        public async Task<IActionResult> ProcesarPedido()
+        {
+            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
+
+            if (!usuarioId.HasValue)
             {
+                return RedirectToAction("Login", "Cuenta");
+            }
+
+            var carrito = await _context.CarritoItems
+                .Include(c => c.Producto)
+                .Where(c => c.UsuarioID == usuarioId.Value)
+                .ToListAsync();
+
+            if (!carrito.Any())
+            {
+                TempData["ErrorCarrito"] =
+                    "Tu carrito está vacío.";
+
                 return RedirectToAction(nameof(Index));
             }
 
-            // 1. Crear el Pedido
-            var nuevoPedido = new Pedido
+            if (carrito.Any(c => c.Producto == null))
             {
-                UsuarioID = usuario.UsuarioID,
-                FechaPedido = DateTime.Now,
-                Total = carrito.Sum(c => c.Subtotal),
-                Estado = "Completado"
-            };
+                TempData["ErrorCarrito"] =
+                    "Hay un producto que ya no existe en el catálogo. Revisa tu carrito.";
 
-            _context.Pedidos.Add(nuevoPedido);
-            await _context.SaveChangesAsync();
-
-            // 2. Guardar Detalles y actualizar Stock
-            foreach (var item in carrito)
-            {
-                var producto = await _context.Productos.FindAsync(item.ProductoID);
-                if (producto != null)
-                {
-                    producto.Stock -= item.Cantidad;
-                    if (producto.Stock < 0) producto.Stock = 0;
-                }
-
-                var detalle = new DetallePedido
-                {
-                    PedidoID = nuevoPedido.PedidoID,
-                    ProductoID = item.ProductoID,
-                    Cantidad = item.Cantidad,
-                    PrecioUnitario = item.Precio
-                };
-
-                _context.DetallePedidos.Add(detalle);
+                return RedirectToAction(nameof(Index));
             }
 
-            await _context.SaveChangesAsync();
-
-            // 3. Cargar datos completos (incluyendo Usuario)
-            var pedidoCompleto = await _context.Pedidos
-                .Include(p => p.Usuario)
-                .Include(p => p.Detalles)
-                .ThenInclude(d => d.Producto)
-                .FirstOrDefaultAsync(p => p.PedidoID == nuevoPedido.PedidoID);
-
-            if (pedidoCompleto != null)
-            {
-                // Esperar el envío real del correo por SMTP
-                await _emailService.EnviarComprobanteCompraAsync(usuario.Correo, usuario.NombreCompleto, pedidoCompleto);
-            }
-
-            // 4. Limpiar Carrito de la sesión
-            HttpContext.Session.Remove(CARRITO_SESSION_KEY);
-
-            return RedirectToAction(nameof(Confirmacion), new { id = nuevoPedido.PedidoID });
+            return View("ProcesarPedido", carrito);
         }
 
-        // GET: /Carrito/Confirmacion/5
-        public async Task<IActionResult> Confirmacion(int id)
+        // POST: /Carrito/ConfirmarPedido
+        // POST: /Carrito/ProcesarPedido
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Route("Carrito/Checkout")]
+        [Route("Carrito/ConfirmarPedido")]
+        [Route("Carrito/ProcesarPedido")]
+        public async Task<IActionResult> ConfirmarPedido(
+            string? direccion,
+            string? distrito,
+            string? telefono,
+            string? metodoPago,
+            string? tipoEntrega)
         {
-            var pedido = await _context.Pedidos
-                .Include(p => p.Usuario)
-                .Include(p => p.Detalles)
-                .ThenInclude(d => d.Producto)
-                .FirstOrDefaultAsync(p => p.PedidoID == id);
+            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
 
-            if (pedido == null) return NotFound();
+            if (!usuarioId.HasValue)
+            {
+                return RedirectToAction("Login", "Cuenta");
+            }
+
+            // Validar los datos enviados por el formulario.
+            if (string.IsNullOrWhiteSpace(direccion) ||
+                string.IsNullOrWhiteSpace(distrito) ||
+                string.IsNullOrWhiteSpace(telefono) ||
+                string.IsNullOrWhiteSpace(metodoPago))
+            {
+                ViewBag.ErrorCheckout =
+                    "Completa la dirección, el distrito, el teléfono y el método de pago.";
+
+                var carritoActual = await _context.CarritoItems
+                    .Include(c => c.Producto)
+                    .Where(c => c.UsuarioID == usuarioId.Value)
+                    .ToListAsync();
+
+                return View("ProcesarPedido", carritoActual);
+            }
+
+            tipoEntrega = string.IsNullOrWhiteSpace(tipoEntrega)
+                ? "Domicilio"
+                : tipoEntrega;
+
+            if (tipoEntrega != "Domicilio" &&
+                tipoEntrega != "Recojo")
+            {
+                return BadRequest("La modalidad de entrega no es válida.");
+            }
+
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            // Volver a consultar el carrito real del usuario.
+            var carrito = await _context.CarritoItems
+                .Include(c => c.Producto)
+                .Where(c => c.UsuarioID == usuarioId.Value)
+                .ToListAsync();
+
+            if (!carrito.Any())
+            {
+                await transaction.RollbackAsync();
+
+                TempData["ErrorCarrito"] =
+                    "Tu carrito está vacío.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Validar los productos y el stock antes de crear el pedido.
+            foreach (var item in carrito)
+            {
+                if (item.Producto == null)
+                {
+                    await transaction.RollbackAsync();
+
+                    ViewBag.ErrorCheckout =
+                        "Uno de los productos ya no existe en el catálogo.";
+
+                    return View("ProcesarPedido", carrito);
+                }
+
+                if (item.Cantidad <= 0 ||
+                    item.Producto.Stock < item.Cantidad)
+                {
+                    await transaction.RollbackAsync();
+
+                    ViewBag.ErrorCheckout =
+                        $"Stock insuficiente para {item.Producto.Nombre}. " +
+                        "Vuelve al carrito y revisa las cantidades.";
+
+                    return View("ProcesarPedido", carrito);
+                }
+            }
+
+            decimal subtotal = carrito.Sum(i => i.Subtotal);
+
+            decimal costoEnvio =
+                tipoEntrega == "Recojo" || subtotal > 100m
+                    ? 0m
+                    : 10m;
+
+            decimal total = subtotal + costoEnvio;
+
+            var pedido = new Pedido
+            {
+                UsuarioID = usuarioId.Value,
+                FechaPedido = DateTime.Now,
+                Estado = "Pendiente",
+                Total = total,
+                DireccionEnvio = direccion.Trim(),
+                Ciudad = distrito.Trim(),
+                TelefonoContacto = telefono.Trim(),
+                MetodoPago = metodoPago.Trim(),
+                Detalles = new List<DetallePedido>()
+            };
+
+            foreach (var item in carrito)
+            {
+                var producto = item.Producto!;
+
+                pedido.Detalles.Add(new DetallePedido
+                {
+                    ProductoID = item.ProductoID,
+                    Cantidad = item.Cantidad,
+                    PrecioUnitario = producto.Precio
+                });
+
+                // Descontar del inventario lo que se está comprando.
+                producto.Stock -= item.Cantidad;
+            }
+
+            _context.Pedidos.Add(pedido);
+
+            // Eliminar únicamente los artículos de este usuario.
+            _context.CarritoItems.RemoveRange(carrito);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return RedirectToAction(
+                nameof(PedidoConfirmado),
+                new { id = pedido.PedidoID });
+        }
+
+        // GET: /Carrito/PedidoConfirmado
+        [HttpGet]
+        public async Task<IActionResult> PedidoConfirmado(int id)
+        {
+            int? usuarioId = HttpContext.Session.GetInt32("UsuarioID");
+
+            if (!usuarioId.HasValue)
+            {
+                return RedirectToAction("Login", "Cuenta");
+            }
+
+            var pedido = await _context.Pedidos
+                .Include(p => p.Detalles)
+                    .ThenInclude(d => d.Producto)
+                .FirstOrDefaultAsync(p =>
+                    p.PedidoID == id &&
+                    p.UsuarioID == usuarioId.Value);
+
+            if (pedido == null)
+            {
+                return RedirectToAction("Index", "Home");
+            }
 
             return View(pedido);
         }
-
-        private List<ItemCarrito> ObtenerCarrito()
-        {
-            return HttpContext.Session.GetObjectFromJson<List<ItemCarrito>>(CARRITO_SESSION_KEY) ?? new List<ItemCarrito>();
-        }
-
-        private void GuardarCarrito(List<ItemCarrito> carrito)
-        {
-            HttpContext.Session.SetObjectAsJson(CARRITO_SESSION_KEY, carrito);
-        }
     }
 }
+

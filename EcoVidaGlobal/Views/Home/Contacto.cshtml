@@ -1,0 +1,40 @@
+﻿@{
+    ViewData["Title"] = "Contacto";
+    Layout = "~/Views/Shared/_LayoutCliente.cshtml";
+}
+
+<div class="container py-4" style="max-width: 800px;">
+    <div class="text-center mb-4">
+        <span class="badge bg-success-subtle text-success border border-success fw-bold px-3 py-1 rounded-pill mb-2">
+            ✉️ Atención al Cliente
+        </span>
+        <h1 class="fw-bold text-success">Contáctanos</h1>
+        <p class="text-muted">¿Tienes alguna duda o consulta sobre nuestros productos? Escríbenos.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4 p-md-5 rounded-4 bg-white">
+        <form action="#" method="post">
+            <div class="row g-3">
+                <div class="col-md-6 text-start">
+                    <label class="form-label small fw-bold">Nombre Completo</label>
+                    <input type="text" class="form-control" placeholder="Ej. Jennifer Alva" required />
+                </div>
+                <div class="col-md-6 text-start">
+                    <label class="form-label small fw-bold">Correo Electrónico</label>
+                    <input type="email" class="form-control" placeholder="nombre@correo.com" required />
+                </div>
+                <div class="col-12 text-start">
+                    <label class="form-label small fw-bold">Asunto</label>
+                    <input type="text" class="form-control" placeholder="Consulta sobre pedido / productos" required />
+                </div>
+                <div class="col-12 text-start">
+                    <label class="form-label small fw-bold">Mensaje</label>
+                    <textarea class="form-control" rows="4" placeholder="Escribe tu mensaje aquí..." required></textarea>
+                </div>
+                <div class="col-12 mt-4">
+                    <button type="button" class="btn btn-success w-100 fw-bold py-2 rounded-3">Enviar Mensaje</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

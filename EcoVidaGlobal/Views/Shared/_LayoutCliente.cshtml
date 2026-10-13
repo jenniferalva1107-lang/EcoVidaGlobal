@@ -1,0 +1,316 @@
+﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.EntityFrameworkCore
+@using EcoVidaGlobal.Data
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ApplicationDbContext DbContext
+
+@{
+    var usuarioNombre = HttpContextAccessor.HttpContext?.Session.GetString("UsuarioNombre");
+    var usuarioRol = HttpContextAccessor.HttpContext?.Session.GetString("UsuarioRol");
+    var usuarioId = HttpContextAccessor.HttpContext?.Session.GetInt32("UsuarioID");
+
+    var carritoCantidad = 0;
+
+    if (usuarioId.HasValue)
+    {
+        carritoCantidad = await DbContext.CarritoItems
+            .Where(c => c.UsuarioID == usuarioId.Value)
+            .SumAsync(c => (int?)c.Cantidad) ?? 0;
+    }
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - EcoVida Enterprise</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+
+    <style>
+        body {
+            background-color: #f4f6f8;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .ecovida-navbar {
+            background-color: #0d8a59;
+            padding: 10px 0;
+        }
+
+        .navbar-brand-logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #ffffff !important;
+            text-decoration: none;
+        }
+
+        .badge-enterprise {
+            background-color: #ffc107;
+            color: #000000;
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+
+        .nav-capsule {
+            background-color: #085d3b;
+            border-radius: 12px;
+            padding: 4px 12px;
+        }
+
+            .nav-capsule .nav-link,
+            .nav-capsule .dropdown-toggle {
+                color: #ffffff !important;
+                font-weight: 600;
+                font-size: 0.9rem;
+                padding: 8px 14px !important;
+                border-radius: 8px;
+                transition: background 0.2s;
+            }
+
+                .nav-capsule .nav-link:hover,
+                .nav-capsule .dropdown-toggle:hover {
+                    background-color: rgba(255, 255, 255, 0.15);
+                }
+
+        .btn-carrito-gold {
+            background-color: #ffc107;
+            color: #000;
+            font-weight: 800;
+            border-radius: 8px;
+            padding: 6px 14px;
+            border: none;
+        }
+
+            .btn-carrito-gold:hover {
+                background-color: #e0a800;
+                color: #000;
+            }
+
+        .btn-login-outline {
+            border: 1.5px solid #ffffff;
+            color: #ffffff;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 6px 14px;
+        }
+
+            .btn-login-outline:hover {
+                background-color: #ffffff;
+                color: #0d8a59;
+            }
+
+        .floating-btn-whatsapp {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #25d366;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            text-decoration: none;
+        }
+
+        .floating-btn-ecobot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #0d8a59;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            text-decoration: none;
+        }
+
+        footer {
+            background-color: #1a2228;
+            color: #a0aec0;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- NAVBAR -->
+    <header class="ecovida-navbar shadow-sm sticky-top">
+        <div class="container d-flex align-items-center justify-content-between">
+
+            <a class="navbar-brand-logo d-flex align-items-center"
+               asp-controller="Home"
+               asp-action="Index">
+                🌱 EcoVida <span class="badge-enterprise">Enterprise</span>
+            </a>
+
+            <!-- MENÚ SUPERIOR -->
+            <div class="d-none d-lg-flex align-items-center nav-capsule gap-1">
+
+                <a class="nav-link" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-house-door"></i> Inicio
+                </a>
+
+                <div class="dropdown">
+                    <a class="nav-link dropdown-toggle text-white"
+                       href="#"
+                       role="button"
+                       data-bs-toggle="dropdown">
+                        <i class="bi bi-grid-fill"></i> Categorías
+                    </a>
+
+                    <ul class="dropdown-menu shadow border-0 mt-2">
+                        <li>
+                            <a class="dropdown-item fw-bold"
+                               asp-controller="Producto"
+                               asp-action="PorCategoria"
+                               asp-route-nombreCategoria="Cuidado Personal">
+                                🌱 Cuidado Personal
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item fw-bold"
+                               asp-controller="Producto"
+                               asp-action="PorCategoria"
+                               asp-route-nombreCategoria="Hogar Sostenible">
+                                🏡 Hogar Sostenible
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item fw-bold"
+                               asp-controller="Producto"
+                               asp-action="PorCategoria"
+                               asp-route-nombreCategoria="Reutilizables">
+                                ♻️ Reutilizables
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <a class="nav-link" asp-controller="Producto" asp-action="Index">
+                    <i class="bi bi-bag-fill"></i> Catálogo
+                </a>
+
+                <a class="nav-link" asp-controller="Home" asp-action="Nosotros">
+                    <i class="bi bi-info-circle-fill"></i> Nosotros
+                </a>
+
+                <a class="nav-link" asp-controller="Home" asp-action="Contacto">
+                    <i class="bi bi-envelope-fill"></i> Contacto
+                </a>
+
+                @if (!string.IsNullOrEmpty(usuarioNombre))
+                {
+                    <a class="nav-link" asp-controller="Cuenta" asp-action="MisPedidos">
+                        <i class="bi bi-truck"></i> Mis Pedidos
+                    </a>
+                }
+            </div>
+
+            <!-- BOTONES DERECHOS -->
+            <div class="d-flex align-items-center gap-2">
+
+                @if (!string.IsNullOrEmpty(usuarioNombre))
+                {
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light fw-bold dropdown-toggle rounded-3"
+                                type="button"
+                                data-bs-toggle="dropdown">
+                            👤 @usuarioNombre
+                        </button>
+
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+
+                            @if (usuarioRol == "Administrador" ||
+                                                    usuarioRol == "Trabajador de Almacen" ||
+                                                    usuarioRol == "Modulo Contable")
+                            {
+                                <li>
+                                    <a class="dropdown-item fw-bold text-success"
+                                       asp-controller="Usuario"
+                                       asp-action="Index">
+                                        <i class="bi bi-speedometer2"></i> Panel de Gestión
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                            }
+
+                            <li>
+                                <a class="dropdown-item text-danger fw-bold"
+                                   asp-controller="Cuenta"
+                                   asp-action="Logout">
+                                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <a asp-controller="Cuenta"
+                       asp-action="Login"
+                       class="btn btn-login-outline btn-sm">
+                        <i class="bi bi-person-fill"></i> Iniciar Sesión
+                    </a>
+                }
+
+                <!-- CARRITO CON CONTADOR DINÁMICO -->
+                <a asp-controller="Carrito"
+                   asp-action="Index"
+                   class="btn btn-carrito-gold btn-sm d-flex align-items-center gap-1">
+                    🛒 Carrito
+                    <span class="badge bg-dark rounded-pill ms-1">@carritoCantidad</span>
+                </a>
+
+            </div>
+        </div>
+    </header>
+
+    <main class="container my-4 flex-grow-1">
+        @RenderBody()
+    </main>
+
+    <footer class="py-3 text-center mt-5">
+        <div class="container">
+            <p class="mb-0">
+                🌱 EcoVida Enterprise &copy; 2026 — Todos los derechos reservados.
+            </p>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/51900000000"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="floating-btn-whatsapp"
+       title="Escríbenos por WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    <a href="#"
+       class="floating-btn-ecobot"
+       title="EcoBot Asistente">
+        <i class="bi bi-robot"></i>
+    </a>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

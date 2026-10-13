@@ -1,19 +1,38 @@
-using System.Diagnostics;
-using EcoVidaGlobal.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EcoVidaGlobal.Data;
 
 namespace EcoVidaGlobal.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly ApplicationDbContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ApplicationDbContext context)
         {
-            _logger = logger;
+            _context = context;
         }
 
-        public IActionResult Index()
+        // GET: / (Portada principal limpia)
+        public async Task<IActionResult> Index()
+        {
+            // Cargar hasta 4 productos para la sección "Productos Destacados"
+            var productosDestacados = await _context.Productos
+                .Include(p => p.Categoria)
+                .Take(4)
+                .ToListAsync();
+
+            return View(productosDestacados);
+        }
+
+        // GET: /Home/Nosotros (Página independiente)
+        public IActionResult Nosotros()
+        {
+            return View();
+        }
+
+        // GET: /Home/Contacto (Página independiente)
+        public IActionResult Contacto()
         {
             return View();
         }
@@ -21,12 +40,6 @@ namespace EcoVidaGlobal.Controllers
         public IActionResult Privacy()
         {
             return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }

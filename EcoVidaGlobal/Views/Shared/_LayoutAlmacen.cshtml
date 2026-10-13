@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Almacén & Logística EcoVidaGlobal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .sidebar {
+            width: 260px;
+            min-height: 100vh;
+            background-color: #7c2d12;
+            color: #f8fafc;
+        }
+
+            .sidebar .nav-link {
+                color: #ffedd5;
+                padding: 0.7rem 1rem;
+                border-radius: 6px;
+                font-size: 0.95rem;
+                margin-bottom: 4px;
+            }
+
+                .sidebar .nav-link:hover, .sidebar .nav-link.active {
+                    background-color: #9a3412;
+                    color: #ffffff;
+                    font-weight: 600;
+                }
+
+                .sidebar .nav-link i {
+                    margin-right: 10px;
+                    font-size: 1.1rem;
+                }
+
+        .content-area {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- MENÚ LATERAL ALMACÉN -->
+        <div class="sidebar p-3 d-flex flex-column">
+            <a href="/Almacen/Dashboard" class="d-flex align-items-center mb-3 text-white text-decoration-none">
+                <span class="fs-5 fw-bold text-warning">📦 Almacén Central</span>
+            </a>
+            <hr class="text-orange" />
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li class="nav-item"><a href="/Almacen/Dashboard" class="nav-link"><i class="bi bi-speedometer2"></i> Dashboard Logístico</a></li>
+                <li><a href="/Almacen/Inventario" class="nav-link"><i class="bi bi-boxes"></i> Control de Inventario</a></li>
+                <li><a href="/Almacen/Movimientos" class="nav-link"><i class="bi bi-arrow-down-up"></i> Kárdex / Movimientos</a></li>
+                <li><a href="/Almacen/Despachos" class="nav-link"><i class="bi bi-truck"></i> Pedidos y Despachos</a></li>
+                <li><a href="/Almacen/Reposicion" class="nav-link"><i class="bi bi-exclamation-triangle"></i> Alertas de Reposición</a></li>
+            </ul>
+            <hr class="text-orange" />
+            <a href="/Cuenta/Logout" class="btn btn-outline-danger btn-sm w-100"><i class="bi bi-box-arrow-right"></i> Cerrar Sesión</a>
+        </div>
+
+        <!-- ÁREA DE CONTENIDO -->
+        <div class="content-area">
+            @RenderBody()
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

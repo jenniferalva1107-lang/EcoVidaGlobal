@@ -23,12 +23,23 @@
                 <label class="form-label fw-bold text-center d-block">Código de 6 dígitos</label>
                 <input type="text" name="codigo" maxlength="6" class="form-control text-center fw-bold fs-4 letter-spacing-2" placeholder="000000" required autofocus autocomplete="off" />
             </div>
-
-            <button type="submit" class="btn btn-success w-100 fw-bold py-2 mt-2">Verificar e Iniciar Sesión</button>
+            <button type="submit"
+                    class="btn btn-success w-100 fw-bold py-2 mt-2">
+                @(ViewBag.EsRecuperacion == true
+                                ? "Verificar código y continuar"
+                                : "Verificar e Iniciar Sesión")
+            </button>
         </form>
 
-        <div class="text-center mt-3">
-            <small class="text-muted">¿Código de prueba para desarrollo? Puedes usar: <strong>999999</strong></small>
-        </div>
+
+        @if (ViewBag.EsRecuperacion != true)
+        {
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    ¿Código de prueba para desarrollo?
+                    Puedes usar: <strong>999999</strong>
+                </small>
+            </div>
+        }
     </div>
 </div>

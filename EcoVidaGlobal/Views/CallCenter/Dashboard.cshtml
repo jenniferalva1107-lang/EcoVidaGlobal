@@ -1,0 +1,60 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutCallCenter.cshtml";
+    ViewData["Title"] = "Dashboard Call Center";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold text-dark"><i class="bi bi-headset text-indigo me-2"></i> Panel de Atención Telefónica</h3>
+    <span class="badge bg-primary px-3 py-2 fs-6">Operador Call Center</span>
+</div>
+
+<!-- TARJETAS INTERACTIVAS DEL DASHBOARD -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-info">
+            <small class="text-muted fw-bold">LLAMADAS ATENDIDAS HOY</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.LlamadasAtendidas</h3>
+        </div>
+    </div>
+
+    <!-- TARJETA TICKETS PENDIENTES (Clic de redirección) -->
+    <div class="col-md-3">
+        <a href="/CallCenter/Tickets?estado=pendientes" class="text-decoration-none">
+            <div class="card p-3 shadow-sm border-0 border-start border-4 border-warning h-100 hover-card">
+                <small class="text-muted fw-bold">TICKETS PENDIENTES</small>
+                <h3 class="fw-bold text-warning mt-1">@ViewBag.TicketsPendientes</h3>
+                <small class="text-primary fw-semibold"><i class="bi bi-arrow-right"></i> Ver pendientes</small>
+            </div>
+        </a>
+    </div>
+
+    <!-- TARJETA TICKETS RESUELTOS (Clic de redirección) -->
+    <div class="col-md-3">
+        <a href="/CallCenter/Tickets?estado=resueltos" class="text-decoration-none">
+            <div class="card p-3 shadow-sm border-0 border-start border-4 border-success h-100 hover-card">
+                <small class="text-muted fw-bold">TICKETS RESUELTOS</small>
+                <h3 class="fw-bold text-success mt-1">@ViewBag.TicketsResueltos</h3>
+                <small class="text-success fw-semibold"><i class="bi bi-arrow-right"></i> Ver resueltos</small>
+            </div>
+        </a>
+    </div>
+
+    <!-- TARJETA PEDIDOS POR ATENDER -->
+    <div class="col-md-3">
+        <a href="/CallCenter/Pedidos" class="text-decoration-none">
+            <div class="card p-3 shadow-sm border-0 border-start border-4 border-primary h-100 hover-card">
+                <small class="text-muted fw-bold">PEDIDOS POR ATENDER</small>
+                <h3 class="fw-bold text-primary mt-1">@ViewBag.PedidosEnProceso</h3>
+                <small class="text-primary fw-semibold"><i class="bi bi-arrow-right"></i> Consultar pedidos</small>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <h5 class="fw-bold mb-3">Acciones Rápidas</h5>
+    <div class="d-flex gap-3">
+        <a href="/CallCenter/BuscarCliente" class="btn btn-outline-primary fw-bold"><i class="bi bi-search me-1"></i> Buscar Cliente</a>
+        <a href="/CallCenter/CrearTicket" class="btn btn-success fw-bold"><i class="bi bi-plus-circle me-1"></i> Registrar Incidente</a>
+    </div>
+</div>

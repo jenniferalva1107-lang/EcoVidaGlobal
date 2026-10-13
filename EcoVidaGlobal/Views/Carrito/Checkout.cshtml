@@ -1,0 +1,317 @@
+﻿@model EcoVidaGlobal.Models.CheckoutViewModel
+
+@{
+    ViewData["Title"] = "Finalizar Compra - EcoVidaGlobal";
+    Layout = "~/Views/Shared/_LayoutCliente.cshtml";
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #mapaCheckout {
+        height: 300px;
+        width: 100%;
+        border-radius: 12px;
+        z-index: 1;
+    }
+
+    .sugerencias-lista {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        max-height: 180px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #ced4da;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .sugerencias-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f1f1;
+        font-size: 0.9rem;
+    }
+
+        .sugerencias-item:hover {
+            background-color: #e8f5e9;
+            color: #198754;
+        }
+
+    .tipo-entrega-card {
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+        .tipo-entrega-card:hover, .tipo-entrega-card.active {
+            border-color: #198754 !important;
+            background-color: #f8fff9;
+        }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <span class="badge bg-success-subtle text-success border border-success fw-bold px-3 py-1 rounded-pill mb-2">
+                🛒 Paso 2 de 3
+            </span>
+            <h2 class="fw-bold text-success mb-0">Modalidad de Entrega y Pago</h2>
+        </div>
+        <a asp-controller="Carrito" asp-action="Index" class="btn btn-outline-secondary btn-sm fw-bold rounded-3">
+            ← Volver al Carrito
+        </a>
+    </div>
+
+    <form asp-controller="Carrito" asp-action="ProcesarPedido" method="post" id="formCheckout">
+        @Html.AntiForgeryToken()
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+
+                <!-- SELECCIÓN DE TIPO DE ENTREGA -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+                    <h5 class="fw-bold text-success mb-3"><i class="bi bi-truck me-2"></i>Tipo de Entrega</h5>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <div class="card p-3 border rounded-3 tipo-entrega-card active" id="btnDomicilio" onclick="seleccionarEntrega('Domicilio')">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="TipoEntrega" id="radioDomicilio" value="Domicilio" checked>
+                                    <label class="form-check-label fw-bold text-dark" for="radioDomicilio">
+                                        🚚 Envío a Domicilio
+                                    </label>
+                                </div>
+                                <small class="text-muted ms-4">Entrega en 24h a 48h</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card p-3 border rounded-3 tipo-entrega-card" id="btnRecojo" onclick="seleccionarEntrega('Recojo')">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="TipoEntrega" id="radioRecojo" value="Recojo">
+                                    <label class="form-check-label fw-bold text-dark" for="radioRecojo">
+                                        🏪 Recojo en Tienda
+                                    </label>
+                                </div>
+                                <small class="text-muted ms-4">¡Gratis en 3 Sedes!</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN DIRECCIÓN (DOMICILIO) -->
+                    <div id="secDomicilio">
+                        <div class="mb-3 position-relative">
+                            <label asp-for="DireccionEnvio" class="form-label fw-semibold text-dark">Escribe tu Dirección exacta</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-success text-white"><i class="bi bi-search"></i></span>
+                                <input asp-for="DireccionEnvio" id="txtDireccion" class="form-control" placeholder="Ej: Jirón Lanqui 123, San Luis" autocomplete="off" />
+                            </div>
+                            <div id="listaSugerencias" class="sugerencias-lista d-none"></div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Ciudad" class="form-label fw-semibold text-dark">Ciudad / Distrito</label>
+                                <input asp-for="Ciudad" id="txtCiudad" class="form-control" placeholder="Ej. San Luis, Lima" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TelefonoContacto" class="form-label fw-semibold text-dark">Teléfono Celular</label>
+                                <input asp-for="TelefonoContacto" class="form-control" placeholder="Ej. 960935551" required />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN RECOJO EN LOCAL -->
+                    <div id="secRecojo" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark">Selecciona la Sede para Recojo</label>
+                            <select id="selectSede" class="form-select" onchange="cambiarSedeMapa(this.value)">
+                                <option value="SanLuis">Sede Principal: Av. Nicolás Arriola 1230, San Luis</option>
+                                <option value="Miraflores">Sede EcoVida Miraflores: Av. Larco 456, Miraflores</option>
+                                <option value="SanIsidro">Sede EcoVida San Isidro: Av. Javier Prado Este 890, San Isidro</option>
+                            </select>
+                        </div>
+                        <p class="small text-muted mb-2"><i class="bi bi-clock me-1"></i> Horario de atención: Lunes a Sábado de 9:00 am a 7:00 pm.</p>
+                    </div>
+
+                    <!-- MAPA INTERACTIVO -->
+                    <div class="mt-2">
+                        <div id="mapaCheckout" class="shadow-sm border"></div>
+                    </div>
+                </div>
+
+                <!-- METODOS DE PAGO -->
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+                    <h5 class="fw-bold text-success mb-3"><i class="bi bi-credit-card-fill me-2"></i>Método de Pago</h5>
+
+                    <!-- OPCIÓN YAPE / PLIN -->
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" asp-for="MetodoPago" value="Yape/Plin" id="pagoYape" checked onchange="cambiarMetodoPago('Yape')" />
+                        <label class="form-check-label fw-semibold text-dark" for="pagoYape">
+                            📱 Yape / Plin (Billetera Digital)
+                        </label>
+                    </div>
+
+                    <div id="secYape" class="p-3 bg-light rounded-3 mb-3 text-center">
+                        <p class="small text-muted mb-2">Escanea el código QR con tu aplicativo de Yape o Plin:</p>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=YAPE-ECOVIDAGLOBAL" class="img-fluid rounded border mb-2" alt="QR Yape EcoVida" />
+                        <p class="fw-bold text-success mb-1">Número Yape: 960 935 551</p>
+                        <p class="small text-muted mb-3">Titular: EcoVida Global S.A.C.</p>
+
+                        <div class="text-start bg-white p-3 rounded-3 border">
+                            <label class="form-label small fw-bold text-dark mb-1">Código de Aprobación / Operación (Simulado):</label>
+                            <input type="text" class="form-control form-control-sm" placeholder="Ej. 849201" maxlength="8" required />
+                            <small class="text-muted">Ingresa los dígitos de confirmación que figuran en tu Yape.</small>
+                        </div>
+                    </div>
+
+                    <!-- OPCIÓN TARJETA -->
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" asp-for="MetodoPago" value="Tarjeta" id="pagoTarjeta" onchange="cambiarMetodoPago('Tarjeta')" />
+                        <label class="form-check-label fw-semibold text-dark" for="pagoTarjeta">
+                            💳 Tarjeta de Crédito / Débito (Visa, Mastercard)
+                        </label>
+                    </div>
+
+                    <div id="secTarjeta" class="p-3 bg-light rounded-3 mb-3 d-none">
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold">Número de Tarjeta</label>
+                            <input type="text" class="form-control form-control-sm" placeholder="4557 0000 0000 0000" maxlength="19" />
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <label class="form-label small fw-bold">Vencimiento</label>
+                                <input type="text" class="form-control form-control-sm" placeholder="MM/AA" maxlength="5" />
+                            </div>
+                            <div class="col-6 mb-2">
+                                <label class="form-label small fw-bold">CVV</label>
+                                <input type="password" class="form-control form-control-sm" placeholder="123" maxlength="4" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OPCIÓN CONTRA ENTREGA -->
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" asp-for="MetodoPago" value="ContraEntrega" id="pagoContra" onchange="cambiarMetodoPago('ContraEntrega')" />
+                        <label class="form-check-label fw-semibold text-dark" for="pagoContra">
+                            💵 Pago Contra Entrega (Efectivo o P.O.S.)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESUMEN FINAL Y BOTÓN -->
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+                    <h5 class="fw-bold text-success mb-3">Resumen del Pedido</h5>
+
+                    <ul class="list-group list-group-flush mb-3">
+                        @foreach (var item in Model.ItemsCarrito)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                                <div>
+                                    <h6 class="my-0 fw-bold text-dark">@(item.Producto?.Nombre ?? "Producto")</h6>
+                                    <small class="text-muted">Cant: @item.Cantidad x S/ @((item.Producto?.Precio ?? 0).ToString("F2"))</small>
+                                </div>
+                                <span class="fw-bold text-dark">S/ @((item.Cantidad * (item.Producto?.Precio ?? 0)).ToString("F2"))</span>
+                            </li>
+                        }
+                    </ul>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal</span>
+                        <span class="fw-bold text-dark">S/ @Model.Subtotal.ToString("F2")</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Costo de Envío</span>
+                        <span id="txtCostoEnvio" class="fw-bold text-dark">S/ @Model.CostoEnvio.ToString("F2")</span>
+                    </div>
+
+                    <hr class="my-3" />
+
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="fs-5 fw-bold text-dark">Total A Pagar</span>
+                        <span id="txtTotalPagar" class="fs-4 fw-bold text-success">S/ @Model.Total.ToString("F2")</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-3 rounded-3 shadow-sm">
+                        Confirmar y Realizar Pedido →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var map, marker;
+    var sedes = {
+        'SanLuis': { lat: -12.0833, lng: -77.0000, nombre: "Sede Principal: Av. Nicolás Arriola 1230, San Luis" },
+        'Miraflores': { lat: -12.1211, lng: -77.0297, nombre: "Sede EcoVida Miraflores: Av. Larco 456, Miraflores" },
+        'SanIsidro': { lat: -12.0910, lng: -77.0260, nombre: "Sede EcoVida San Isidro: Av. Javier Prado Este 890, San Isidro" }
+    };
+
+    function seleccionarEntrega(tipo) {
+        if (tipo === 'Domicilio') {
+            document.getElementById('btnDomicilio').classList.add('active');
+            document.getElementById('btnRecojo').classList.remove('active');
+            document.getElementById('secDomicilio').classList.remove('d-none');
+            document.getElementById('secRecojo').classList.add('d-none');
+            document.getElementById('txtCostoEnvio').innerText = 'S/ 10.00';
+            marker.setDraggable(true);
+        } else {
+            document.getElementById('btnRecojo').classList.add('active');
+            document.getElementById('btnDomicilio').classList.remove('active');
+            document.getElementById('secRecojo').classList.remove('d-none');
+            document.getElementById('secDomicilio').classList.add('d-none');
+            document.getElementById('txtCostoEnvio').innerText = '¡GRATIS!';
+
+            // Llenar campos con datos de la sede seleccionada
+            cambiarSedeMapa(document.getElementById('selectSede').value);
+            marker.setDraggable(false);
+        }
+    }
+
+    function cambiarSedeMapa(keySede) {
+        var s = sedes[keySede];
+        map.setView([s.lat, s.lng], 15);
+        marker.setLatLng([s.lat, s.lng]);
+        document.getElementById('txtDireccion').value = s.nombre;
+        document.getElementById('txtCiudad').value = keySede;
+    }
+
+    function cambiarMetodoPago(metodo) {
+        document.getElementById('secYape').classList.add('d-none');
+        document.getElementById('secTarjeta').classList.add('d-none');
+
+        if (metodo === 'Yape') document.getElementById('secYape').classList.remove('d-none');
+        if (metodo === 'Tarjeta') document.getElementById('secTarjeta').classList.remove('d-none');
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        map = L.map('mapaCheckout').setView([-12.0833, -77.0000], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        marker = L.marker([-12.0833, -77.0000], { draggable: true }).addTo(map);
+
+        var txtDireccion = document.getElementById('txtDireccion');
+        var txtCiudad = document.getElementById('txtCiudad');
+
+        marker.on('dragend', function (e) {
+            var pos = marker.getLatLng();
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.lat}&lon=${pos.lng}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        txtDireccion.value = data.display_name.split(',').slice(0, 3).join(',').trim();
+                        txtCiudad.value = (data.address.suburb || data.address.city || 'Lima');
+                    }
+                });
+        });
+    });
+</script>

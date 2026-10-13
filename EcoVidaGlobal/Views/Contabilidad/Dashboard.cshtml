@@ -1,0 +1,87 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutContabilidad.cshtml";
+    ViewData["Title"] = "Dashboard Financiero";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold text-dark"><i class="bi bi-graph-up-arrow text-success me-2"></i> Balance y Resumen Financiero</h3>
+    <span class="badge bg-success px-3 py-2 fs-6">Módulo Contable</span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-success bg-white">
+            <small class="text-muted fw-bold">TOTAL INGRESOS (VENTAS)</small>
+            <h3 class="fw-bold text-success mt-1">S/ @ViewBag.TotalIngresos.ToString("N2")</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-danger bg-white">
+            <small class="text-muted fw-bold">EGRESOS Y COMPRAS</small>
+            <h3 class="fw-bold text-danger mt-1">S/ @ViewBag.EgresosEstimados.ToString("N2")</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-primary bg-white">
+            <small class="text-muted fw-bold">UTILIDAD NETA ESTIMADA</small>
+            <h3 class="fw-bold text-primary mt-1">S/ @ViewBag.UtilidadNeta.ToString("N2")</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0 border-start border-4 border-warning bg-white">
+            <small class="text-muted fw-bold">COMPROBANTES EMITIDOS</small>
+            <h3 class="fw-bold text-dark mt-1">@ViewBag.TotalFacturas</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card p-4 shadow-sm border-0 bg-white">
+            <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2"></i> Flujo de Ingresos por Método de Pago</h5>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Método de pago</th>
+                            <th class="text-end">Monto recaudado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (ViewBag.IngresosPorMetodoPago != null &&
+                                                ViewBag.IngresosPorMetodoPago.Count > 0)
+                        {
+                            foreach (var ingreso in ViewBag.IngresosPorMetodoPago)
+                            {
+                                <tr>
+                                    <td>@ingreso.Metodo</td>
+                                    <td class="text-end fw-bold text-success">
+                                        S/ @(((decimal)ingreso.Monto).ToString("N2"))
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="2" class="text-center text-muted py-3">
+                                    No hay ingresos de pedidos pagados registrados.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 shadow-sm border-0 bg-white">
+            <h5 class="fw-bold mb-3">Acciones Rápidas</h5>
+            <div class="d-grid gap-2">
+                <a href="/Contabilidad/Ventas" class="btn btn-outline-success fw-bold"><i class="bi bi-receipt me-1"></i> Ver Libro de Ventas</a>
+                <a href="/Contabilidad/EcoBank" class="btn btn-outline-primary fw-bold"><i class="bi bi-bank me-1"></i> Ir a Conciliación EcoBank</a>
+                <a href="/Contabilidad/Reportes" class="btn btn-success fw-bold"><i class="bi bi-file-earmark-pdf me-1"></i> Exportar Reporte Mensual</a>
+            </div>
+        </div>
+    </div>
+</div>

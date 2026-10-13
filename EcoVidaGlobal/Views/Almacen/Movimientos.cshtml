@@ -1,0 +1,108 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Pedido>
+@{
+    Layout = "~/Views/Shared/_LayoutAlmacen.cshtml";
+    ViewData["Title"] = "Kárdex & Control de Pedidos";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="fw-bold text-dark mb-0">
+        <i class="bi bi-arrow-down-up text-warning me-2"></i>Movimientos de Kárdex y Atención de Pedidos
+    </h3>
+    <span class="badge bg-dark px-3 py-2">Gestión de Logística</span>
+</div>
+
+<div class="card p-4 shadow-sm border-0 bg-white mb-4">
+    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-box-seam me-2"></i>Pedidos Ingresados para Preparación</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>N° Pedido</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Productos</th>
+                    <th>Total</th>
+                    <th>Estado Actual</th>
+                    <th class="text-center">Cambiar Estado / Notificar</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">#EV-2026-@p.PedidoID.ToString("D6")</td>
+                        <td>
+                            <div class="fw-bold">@(p.Usuario?.NombreCompleto ?? "Cliente")</div>
+                            <small class="text-muted">✉️ @(p.Usuario?.Correo ?? "Sin correo")</small>
+                        </td>
+                        <td>@p.FechaPedido.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <ul class="list-unstyled mb-0 small">
+                                @foreach (var d in p.Detalles)
+                                {
+                                    <li>• @(d.Producto?.Nombre ?? "Producto") (x@d.Cantidad)</li>
+                                }
+                        </ul>
+                    </td>
+                    <td class="fw-bold text-success">S/ @p.Total.ToString("F2")</td>
+                    <td>
+                        <span class="badge id-badge-@p.PedidoID
+                                @(p.Estado == "Entregado" ? "bg-success" :
+                                                                p.Estado == "En Camino" ? "bg-info text-dark" :
+                                                                p.Estado == "Empaquetado" ? "bg-primary" :
+                                                                p.Estado == "En Preparacion" ? "bg-warning text-dark" : "bg-secondary")">
+                            @p.Estado
+                        </span>
+                    </td>
+                    <td class="text-center" style="min-width: 250px;">
+                        <div class="input-group input-group-sm">
+                            <select id="select-estado-@p.PedidoID" class="form-select form-select-sm fw-bold">
+                                <option value="Pendiente" selected="@(p.Estado == "Pendiente")">🟡 Pendiente</option>
+                                <option value="En Preparacion" selected="@(p.Estado == "En Preparacion")">📦 En Preparación</option>
+                                <option value="Empaquetado" selected="@(p.Estado == "Empaquetado")">🏷️ Empaquetado</option>
+                                <option value="En Camino" selected="@(p.Estado == "En Camino")">🚚 En Camino</option>
+                                <option value="Entregado" selected="@(p.Estado == "Entregado")">✅ Entregado</option>
+                            </select>
+                            <button class="btn btn-warning fw-bold btn-sm text-dark" onclick="actualizarEstadoPedido(@p.PedidoID)">
+                                Actualizar
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function actualizarEstadoPedido(pedidoId) {
+        var estadoSeleccionado = document.getElementById('select-estado-' + pedidoId).value;
+
+        if (!confirm('¿Deseas cambiar el estado del Pedido #EV-2026-' + pedidoId + ' a "' + estadoSeleccionado + '" y notificar al cliente por correo?')) {
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('pedidoId', pedidoId);
+        formData.append('nuevoEstado', estadoSeleccionado);
+
+        fetch('/Almacen/CambiarEstadoPedido', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.exito) {
+                alert(data.mensaje);
+                location.reload();
+            } else {
+                alert('Error: ' + data.mensaje);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Ocurrió un error al procesar el cambio.');
+        });
+    }
+</script>

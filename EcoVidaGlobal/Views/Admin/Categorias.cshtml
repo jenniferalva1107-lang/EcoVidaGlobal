@@ -1,0 +1,52 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Categoria>
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Categorías";
+}
+
+<h3 class="fw-bold mb-4 text-dark">
+    <i class="bi bi-tags text-success me-2"></i>
+    Categorías de Productos
+</h3>
+
+<div class="card p-4 shadow-sm border-0 rounded-3 bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th class="text-center">Icono</th>
+                    <th>Categoría</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@c.CategoriaID</td>
+
+                        <td class="text-center">
+                            @if (!string.IsNullOrWhiteSpace(c.Icono))
+                            {
+                                <i class="@c.Icono fs-4 text-success"
+                                   aria-hidden="true"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-question-circle fs-4 text-secondary"
+                                   aria-hidden="true"></i>
+                            }
+                        </td>
+
+                        <td class="fw-bold">@c.Nombre</td>
+
+                        <td>@(c.Descripcion ?? "Sin descripción")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

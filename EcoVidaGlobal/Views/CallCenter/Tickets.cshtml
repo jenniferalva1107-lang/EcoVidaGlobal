@@ -1,0 +1,205 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutCallCenter.cshtml";
+    ViewData["Title"] = "Tickets de Atención";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="fw-bold text-dark mb-0"><i class="bi bi-headset text-indigo me-2"></i>Gestión de Tickets de Atención</h3>
+    <a href="/CallCenter/CrearTicket" class="btn btn-success fw-bold shadow-sm">
+        <i class="bi bi-plus-circle me-1"></i> + Registrar Nuevo Ticket
+    </a>
+</div>
+
+<!-- PESTAÑAS DE NAVEGACIÓN DE ESTADOS -->
+<ul class="nav nav-pills mb-4 bg-white p-2 rounded-3 shadow-sm" id="pills-tab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold me-2" id="pills-pendientes-tab" data-bs-toggle="pill" data-bs-target="#pills-pendientes" type="button" role="tab">
+            🟡 Pendientes (5)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold me-2" id="pills-resueltos-tab" data-bs-toggle="pill" data-bs-target="#pills-resueltos" type="button" role="tab">
+            🟢 Resueltos (28)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="pills-todos-tab" data-bs-toggle="pill" data-bs-target="#pills-todos" type="button" role="tab">
+            📋 Todos los Tickets
+        </button>
+    </li>
+</ul>
+
+<!-- CONTENIDO DE LAS PESTAÑAS -->
+<div class="tab-content" id="pills-tabContent">
+
+    <!-- 1. TABLA TICKETS PENDIENTES -->
+    <div class="tab-pane fade show active" id="pills-pendientes" role="tabpanel">
+        <div class="card p-4 shadow-sm border-0 rounded-3 bg-white">
+            <h5 class="fw-bold text-warning mb-3"><i class="bi bi-clock-history me-2"></i>Tickets Pendientes de Atención</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Cliente</th>
+                            <th>Asunto / Incidente</th>
+                            <th>Fecha</th>
+                            <th>Prioridad</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="ticket-101">
+                            <td class="fw-bold">#TK-2026-101</td>
+                            <td>Carlos Mendoza (DNI: 78901234)</td>
+                            <td>Retraso en la entrega de Pedido #EV-2026-000001</td>
+                            <td>27/09/2026 10:30 am</td>
+                            <td><span class="badge bg-danger">Alta</span></td>
+                            <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-success btn-sm fw-bold" onclick="resolverTicket('101')">
+                                    ✓ Marcar Resuelto
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="ticket-102">
+                            <td class="fw-bold">#TK-2026-102</td>
+                            <td>María Torres (DNI: 45678912)</td>
+                            <td>Consulta sobre ingredientes de Sérum de Argán</td>
+                            <td>27/09/2026 11:15 am</td>
+                            <td><span class="badge bg-info text-dark">Normal</span></td>
+                            <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-success btn-sm fw-bold" onclick="resolverTicket('102')">
+                                    ✓ Marcar Resuelto
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="ticket-103">
+                            <td class="fw-bold">#TK-2026-103</td>
+                            <td>Juan Pérez (DNI: 12345678)</td>
+                            <td>Cambio de dirección de entrega de pedido</td>
+                            <td>27/09/2026 02:00 pm</td>
+                            <td><span class="badge bg-danger">Alta</span></td>
+                            <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-success btn-sm fw-bold" onclick="resolverTicket('103')">
+                                    ✓ Marcar Resuelto
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="ticket-104">
+                            <td class="fw-bold">#TK-2026-104</td>
+                            <td>Lucía Gómez (DNI: 87654321)</td>
+                            <td>Solicitud de comprobante de pago electrónico</td>
+                            <td>27/09/2026 03:45 pm</td>
+                            <td><span class="badge bg-secondary">Baja</span></td>
+                            <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-success btn-sm fw-bold" onclick="resolverTicket('104')">
+                                    ✓ Marcar Resuelto
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="ticket-105">
+                            <td class="fw-bold">#TK-2026-105</td>
+                            <td>Ana Ramírez (DNI: 23456789)</td>
+                            <td>Consulta sobre el horario de recojo en tienda Miraflores</td>
+                            <td>27/09/2026 04:20 pm</td>
+                            <td><span class="badge bg-info text-dark">Normal</span></td>
+                            <td><span class="badge bg-warning text-dark">Pendiente</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-success btn-sm fw-bold" onclick="resolverTicket('105')">
+                                    ✓ Marcar Resuelto
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. TABLA TICKETS RESUELTOS -->
+    <div class="tab-pane fade" id="pills-resueltos" role="tabpanel">
+        <div class="card p-4 shadow-sm border-0 rounded-3 bg-white">
+            <h5 class="fw-bold text-success mb-3"><i class="bi bi-check-circle me-2"></i>Historial de Tickets Resueltos</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Cliente</th>
+                            <th>Asunto</th>
+                            <th>Fecha Cierre</th>
+                            <th>Atendido Por</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold">#TK-2026-090</td>
+                            <td>Roberto Silva</td>
+                            <td>Confirmación de pago mediante Yape recibido</td>
+                            <td>26/09/2026</td>
+                            <td>Operador Call Center</td>
+                            <td><span class="badge bg-success">Resuelto</span></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">#TK-2026-089</td>
+                            <td>Elena Morales</td>
+                            <td>Reprogramación de fecha de despacho</td>
+                            <td>26/09/2026</td>
+                            <td>Operador Call Center</td>
+                            <td><span class="badge bg-success">Resuelto</span></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">#TK-2026-088</td>
+                            <td>David Castro</td>
+                            <td>Información de catálogo de productos biodegradables</td>
+                            <td>25/09/2026</td>
+                            <td>Operador Call Center</td>
+                            <td><span class="badge bg-success">Resuelto</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TABLA TODOS LOS TICKETS -->
+    <div class="tab-pane fade" id="pills-todos" role="tabpanel">
+        <div class="card p-4 shadow-sm border-0 rounded-3 bg-white">
+            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-list-task me-2"></i>Registro General de Atención</h5>
+            <p class="text-muted">Mostrando la totalidad de incidentes e interacciones registradas telefónicamente.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function resolverTicket(id) {
+        if (confirm('¿Deseas marcar el ticket #TK-2026-' + id + ' como RESUELTO?')) {
+            var fila = document.getElementById('ticket-' + id);
+            if (fila) {
+                fila.style.display = 'none';
+                alert('Ticket #TK-2026-' + id + ' marcado como Resuelto correctamente.');
+            }
+        }
+    }
+
+    // Activar pestaña según el parámetro URL (Ej: /CallCenter/Tickets?estado=resueltos)
+    document.addEventListener("DOMContentLoaded", function () {
+        var urlParams = new URLSearchParams(window.location.search);
+        var estado = urlParams.get('estado');
+
+        if (estado === 'resueltos') {
+            var tab = new bootstrap.Tab(document.getElementById('pills-resueltos-tab'));
+            tab.show();
+        } else if (estado === 'pendientes') {
+            var tab = new bootstrap.Tab(document.getElementById('pills-pendientes-tab'));
+            tab.show();
+        }
+    });
+</script>

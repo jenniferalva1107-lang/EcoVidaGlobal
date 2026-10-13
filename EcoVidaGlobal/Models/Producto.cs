@@ -19,8 +19,13 @@ namespace EcoVidaGlobal.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Precio { get; set; }
 
+
         [Required]
         public int Stock { get; set; }
+
+        [Required]
+        public int StockAlmacen { get; set; }
+
 
         public string? ImagenUrl { get; set; }
 

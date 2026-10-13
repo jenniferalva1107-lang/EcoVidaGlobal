@@ -2,7 +2,9 @@
 {
     public class Usuario
     {
+
         public int UsuarioID { get; set; }
+        public string CodigoUsuario { get; set; } = string.Empty;
         public string NombreCompleto { get; set; } = string.Empty;
         public string Correo { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;

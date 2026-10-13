@@ -1,0 +1,44 @@
+﻿```cshtml
+@model IEnumerable<EcoVidaGlobal.Models.Rol>
+
+@{
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    ViewData["Title"] = "Roles y Permisos";
+}
+
+<h3 class="fw-bold mb-4 text-dark">
+    <i class="bi bi-shield-lock text-success me-2"></i>
+    Roles del Sistema
+</h3>
+
+<div class="card p-4 shadow-sm border-0 rounded-3 bg-white">
+    <h5 class="fw-bold mb-3">Estructura de Roles de EcoVidaGlobalDB</h5>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Rol ID</th>
+                    <th>Nombre del Rol</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var r in Model.OrderBy(r => r.RolID))
+                {
+                    <tr>
+                        <td class="fw-bold">@r.RolID</td>
+
+                        <td>@r.NombreRol</td>
+
+                        <td>
+                            <span class="badge bg-success">Activo</span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+```

@@ -3,10 +3,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EcoVidaGlobal.Models
 {
+    [Table("DetallePedidos")]
     public class DetallePedido
     {
         [Key]
-        public int DetalleID { get; set; }
+        [Column("DetalleID")] // Indica a Entity Framework que mapee DetallePedidoID a la columna DetalleID de la BD
+        public int DetallePedidoID { get; set; }
 
         public int PedidoID { get; set; }
 
@@ -14,14 +16,14 @@ namespace EcoVidaGlobal.Models
 
         public int Cantidad { get; set; }
 
-        [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal PrecioUnitario { get; set; }
 
+        // Propiedades de navegación
         [ForeignKey("PedidoID")]
-        public Pedido? Pedido { get; set; }
+        public virtual Pedido? Pedido { get; set; }
 
         [ForeignKey("ProductoID")]
-        public Producto? Producto { get; set; }
+        public virtual Producto? Producto { get; set; }
     }
 }

@@ -1,40 +1,327 @@
 ﻿@model IEnumerable<EcoVidaGlobal.Models.Pedido>
 
 @{
-    ViewData["Title"] = "Mis Pedidos";
+    ViewData["Title"] = "Mis Pedidos - EcoVidaGlobal";
 }
 
-<div class="container mt-4">
-    <h2 class="fw-bold text-success mb-4">📦 Mis Compras y Estado de Envío</h2>
+<div class="container my-5 py-3">
 
-    @foreach (var p in Model)
+    <!-- ENCABEZADO DE LA PÁGINA -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+        <div>
+            <span class="badge bg-success-subtle text-success border border-success fw-bold px-3 py-1 rounded-pill mb-2">
+                📦 Historial de Compras
+            </span>
+
+            <h2 class="fw-bold text-success mb-0">Mis Pedidos</h2>
+        </div>
+
+        <a asp-controller="Producto"
+           asp-action="Index"
+           class="btn btn-outline-success fw-bold rounded-3">
+            🛍️ Seguir Comprando
+        </a>
+    </div>
+
+    <!--MensajePago-->
+    @if (TempData["MensajePago"] != null)
     {
-        <div class="card shadow-sm border-0 mb-3 p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="fw-bold text-dark mb-0">Pedido #@p.PedidoID - @p.FechaPedido.ToString("dd/MM/yyyy")</h5>
-                <span class="badge @(p.Estado == "Entregado" ? "bg-success" : p.Estado == "En Camino" ? "bg-info text-dark" : "bg-warning text-dark") fs-6">
-                    @p.Estado
-                </span>
-            </div>
-            <p class="text-muted small mb-2">📍 <strong>Dirección:</strong> @p.DireccionEnvio</p>
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr><th>Producto</th><th>Cantidad</th><th>Total</th></tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var d in p.Detalles)
-                        {
-                            <tr>
-                                <td>@d.Producto?.Nombre</td>
-                                <td>@d.Cantidad</td>
-                                <td>S/ @(d.PrecioUnitario* d.Cantidad)</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            <div class="text-end fw-bold text-success fs-5">Total: S/ @p.Total</div>
+        <div class="alert alert-info alert-dismissible fade show mb-4"
+             role="alert">
+            @TempData["MensajePago"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Cerrar"></button>
         </div>
     }
+
+    <!-- COMPROBAR SI EXISTEN PEDIDOS -->
+    @if (Model == null || !Model.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center rounded-4 bg-white">
+            <div class="fs-1 text-muted mb-3">📦</div>
+
+            <h4 class="fw-bold text-dark mb-2">
+                Aún no has realizado ningún pedido
+            </h4>
+
+            <p class="text-muted mb-4">
+                Explora nuestro catálogo ecológico y haz tu primera compra sostenible.
+            </p>
+
+            <div>
+                <a asp-controller="Producto"
+                   asp-action="Index"
+                   class="btn btn-success btn-lg fw-bold px-4 rounded-3"
+                   style="background-color: #0f8b4c;">
+                    Explorar productos
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- LISTA DE PEDIDOS -->
+        <div class="row g-4">
+
+            @foreach (var pedido in Model)
+            {
+                <div class="col-12">
+
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+
+                        <!-- ENCABEZADO Y ESTADOS -->
+                        <div class="card-header bg-light border-bottom p-3
+                                            d-flex flex-wrap align-items-center
+                                            justify-content-between gap-3">
+
+                            <div>
+                                <div class="fw-bold text-dark fs-5">
+                                    Pedido #EV-2026-@pedido.PedidoID.ToString("D6")
+                                </div>
+
+                                <span class="text-muted small">
+                                    Fecha:
+                                    @pedido.FechaPedido.ToString("dd/MM/yyyy HH:mm")
+                                </span>
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-2">
+
+                                <!-- ESTADO DEL PEDIDO -->
+                                @if (pedido.Estado == "Entregado")
+                                {
+                                    <span class="badge bg-success px-3 py-2 rounded-pill">
+                                        ✓ Entregado
+                                    </span>
+                                }
+                                else if (pedido.Estado == "En Camino")
+                                {
+                                    <span class="badge bg-info text-dark px-3 py-2 rounded-pill">
+                                        🚚 En camino
+                                    </span>
+                                }
+                                else if (pedido.Estado == "En Almacen" ||
+                                pedido.Estado == "En Almacén")
+                                {
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                        📦 En almacén
+                                    </span>
+                                }
+                                else if (pedido.Estado == "En Preparacion" ||
+                                pedido.Estado == "En Preparación" ||
+                                pedido.Estado == "Procesando")
+                                {
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                        📦 En preparación
+                                    </span>
+                                }
+                                else if (pedido.Estado == "Enviado")
+                                {
+                                    <span class="badge bg-info text-dark px-3 py-2 rounded-pill">
+                                        🚚 Enviado
+                                    </span>
+                                }
+                                else if (pedido.Estado == "Cancelado")
+                                {
+                                    <span class="badge bg-danger px-3 py-2 rounded-pill">
+                                        ✕ Cancelado
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary px-3 py-2 rounded-pill">
+                                        ⏳ @(string.IsNullOrWhiteSpace(pedido.Estado)
+                                                                    ? "Pendiente"
+                                                                    : pedido.Estado)
+                        </span>
+                                                }
+
+                                <!-- ESTADO DEL PAGO -->
+                                @if (pedido.EstadoPago == "Pagado")
+                                {
+                                    <span class="badge bg-success px-3 py-2 rounded-pill">
+                                        ✓ Pago confirmado
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                        💳 Pago pendiente
+                                    </span>
+                                }
+
+                            </div>
+                        </div>
+
+                        <!-- CONTENIDO DEL PEDIDO -->
+                        <div class="card-body p-4">
+
+                            <div class="row g-4">
+
+                                <!-- PRODUCTOS SOLICITADOS -->
+                                <div class="col-md-7">
+
+                                    <h6 class="fw-bold text-secondary mb-3">
+                                        Productos solicitados
+                                    </h6>
+
+                                    <ul class="list-group list-group-flush border-top border-bottom mb-3">
+
+                                        @if (pedido.Detalles != null &&
+                                                                        pedido.Detalles.Any())
+                                        {
+                                            @foreach (var detalle in pedido.Detalles)
+                                            {
+                                                <li class="list-group-item d-flex
+                                                                           justify-content-between
+                                                                           align-items-center gap-3
+                                                                           px-0 bg-transparent">
+
+                                                    <div>
+                                                        <span class="fw-bold text-dark">
+                                                            @(detalle.Producto?.Nombre
+                                                                                                        ?? "Producto EcoVida")
+                                                                                                                          </span>
+
+                                                        <small class="text-muted d-block">
+                                                            Cantidad: @detalle.Cantidad
+                                                            × S/ @detalle.PrecioUnitario.ToString("F2")
+                                                        </small>
+                                                    </div>
+
+                                                    <span class="fw-bold text-success text-nowrap">
+                                                        S/ @((detalle.Cantidad *
+                                                                                                detalle.PrecioUnitario).ToString("F2"))
+                                    </span>
+
+                                                </li>
+                                                                }
+                                        }
+                                        else
+                                        {
+                                            <li class="list-group-item px-0 bg-transparent text-muted small">
+                                                No hay detalles de productos disponibles para este pedido.
+                                            </li>
+                                        }
+
+                                </ul>
+
+                            </div>
+
+                            <!-- ENTREGA, PAGO Y TOTAL -->
+                            <div class="col-md-5">
+
+                                <div class="bg-light p-3 rounded-3 h-100">
+
+                                    <h6 class="fw-bold text-secondary mb-3">
+                                        Datos de entrega
+                                    </h6>
+
+                                    <p class="small text-dark mb-2">
+                                        <strong>Dirección:</strong>
+                                        @(string.IsNullOrWhiteSpace(pedido.DireccionEnvio)
+                                                                            ? "No registrada"
+                                                                            : pedido.DireccionEnvio)
+                                                                                                </p>
+
+                                    <p class="small text-dark mb-2">
+                                        <strong>Ciudad:</strong>
+                                        @(string.IsNullOrWhiteSpace(pedido.Ciudad)
+                                                                            ? "No registrada"
+                                                                            : pedido.Ciudad)
+                                                                                        </p>
+
+                                    <p class="small text-dark mb-2">
+                                        <strong>Teléfono:</strong>
+                                        @(string.IsNullOrWhiteSpace(pedido.TelefonoContacto)
+                                                                            ? "No registrado"
+                                                                            : pedido.TelefonoContacto)
+                                                                                                  </p>
+
+                                    <p class="small text-dark mb-3">
+                                        <strong>Método de pago:</strong>
+                                        @(string.IsNullOrWhiteSpace(pedido.MetodoPago)
+                                                                            ? "No especificado"
+                                                                            : pedido.MetodoPago)
+                                </p>
+
+                                        <hr class="my-3" />
+
+                                        <!-- TOTAL DEL PEDIDO -->
+                                        <div class="d-flex justify-content-between
+                                                            align-items-center gap-2">
+
+                                            <span class="fw-bold text-dark">
+                                                Total del pedido:
+                                            </span>
+
+                                            <span class="fs-4 fw-bold text-success text-nowrap">
+                                                S/ @pedido.Total.ToString("F2")
+                                            </span>
+
+                                        </div>
+
+                                        <!-- SIMULACIÓN DE PAGO -->
+                                @if (pedido.EstadoPago != "Pagado" &&
+                                                                pedido.Estado != "Cancelado")
+                                        {
+                                            <hr class="my-3" />
+
+                                            <p class="small text-muted mb-3">
+                                                Simulación académica: este botón
+                                                no realiza ningún cobro real.
+                                            </p>
+
+                                            <form asp-controller="Cuenta"
+                                                  asp-action="ConfirmarPago"
+                                                  method="post">
+
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden"
+                                                       name="pedidoId"
+                                                       value="@pedido.PedidoID" />
+
+                                                <button type="submit"
+                                                        class="btn btn-success w-100 fw-bold rounded-3">
+                                                    Confirmar pago (simulación)
+                                                </button>
+
+                                            </form>
+                                        }
+                                        else if (pedido.EstadoPago == "Pagado")
+                                        {
+                                            <div class="alert alert-success mt-3 mb-0 py-2">
+                                                <strong>✓ Pago confirmado.</strong>
+                                                <div class="small">
+                                                    El sistema registra este pedido como pagado.
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (pedido.Estado == "Cancelado")
+                                        {
+                                            <div class="alert alert-danger mt-3 mb-0 py-2">
+                                                Este pedido está cancelado.
+                                            </div>
+                                        }
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
 </div>

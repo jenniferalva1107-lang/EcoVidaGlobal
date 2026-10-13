@@ -1,0 +1,27 @@
+﻿@{
+    Layout = "~/Views/Shared/_LayoutCallCenter.cshtml";
+    ViewData["Title"] = "Registrar Incidente";
+}
+<h3 class="fw-bold mb-4"><i class="bi bi-plus-circle me-2"></i>Registrar Nuevo Ticket / Reclamo</h3>
+<div class="card p-4 shadow-sm border-0 bg-white col-md-8">
+    <form>
+        <div class="mb-3">
+            <label class="form-label fw-bold">DNI o Correo del Cliente:</label>
+            <input type="text" class="form-control" placeholder="Buscar cliente..." />
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Tipo de Incidente:</label>
+            <select class="form-select">
+                <option>Consulta de Estado de Envío</option>
+                <option>Retraso en Entrega</option>
+                <option>Producto Dañado</option>
+                <option>Solicitud de Devolución</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Detalle / Notas de la Llamada:</label>
+            <textarea class="form-control" rows="4" placeholder="Escribe el resumen de la atención..."></textarea>
+        </div>
+        <button type="button" onclick="alert('Ticket registrado correctamente en el sistema.')" class="btn btn-primary fw-bold">Guardar Ticket</button>
+    </form>
+</div>

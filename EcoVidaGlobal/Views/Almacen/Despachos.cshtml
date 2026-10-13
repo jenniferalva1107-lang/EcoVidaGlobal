@@ -1,0 +1,111 @@
+﻿@model IEnumerable<EcoVidaGlobal.Models.Pedido>
+
+@{
+    Layout = "~/Views/Shared/_LayoutAlmacen.cshtml";
+    ViewData["Title"] = "Despachos y Empaquetado";
+}
+
+<h3 class="fw-bold mb-4">
+    <i class="bi bi-truck text-success me-2"></i>
+    Preparación de Pedidos y Despachos
+</h3>
+
+<div class="card p-4 shadow-sm border-0 bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Estado Envío</th>
+                    <th class="text-center">Acción</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td class="fw-bold">
+                            #EV-2026-@p.PedidoID.ToString("D6")
+                        </td>
+
+                        <td>
+                            @(p.Usuario?.NombreCompleto ?? "Cliente")
+                        </td>
+
+                        <td>
+                            @p.FechaPedido.ToString("dd/MM/yyyy HH:mm")
+                        </td>
+
+                        <td>
+                            <span class="badge bg-warning text-dark">
+                                @p.Estado
+                            </span>
+                        </td>
+
+                        <td class="text-center">
+                            <button type="button"
+                                    class="btn btn-outline-success btn-sm fw-bold"
+                                    onclick="cambiarEstadoPedido(@p.PedidoID, this)"
+                                    @(p.Estado == "Empaquetado" ||
+                                                                    p.Estado == "En Camino" ||
+                                                                    p.Estado == "Entregado" ||
+                                                                    p.Estado == "Cancelado"
+                                                                    ? "disabled" : "")>
+                            📦 Empaquetado Listo
+                        </button>
+                    </td>
+                </tr>
+                                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function cambiarEstadoPedido(pedidoId, boton) {
+        if (!confirm("¿Confirmas que el pedido está empaquetado y listo para despacho?")) {
+            return;
+        }
+
+        const estadoOriginal = boton.textContent;
+        boton.disabled = true;
+        boton.textContent = "Actualizando...";
+
+        try {
+            const datos = new URLSearchParams();
+            datos.append("pedidoId", pedidoId);
+            datos.append("nuevoEstado", "Empaquetado");
+
+            const respuesta = await fetch(
+                '@Url.Action("CambiarEstadoPedido", "Almacen")',
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: datos.toString()
+                }
+            );
+
+            const resultado = await respuesta.json();
+
+            alert(resultado.mensaje);
+
+            if (respuesta.ok && resultado.exito) {
+                window.location.reload();
+                return;
+            }
+
+            boton.disabled = false;
+            boton.textContent = estadoOriginal;
+        }
+        catch (error) {
+            alert("No se pudo completar la operación. Comprueba la conexión e inténtalo nuevamente.");
+            boton.disabled = false;
+            boton.textContent = estadoOriginal;
+        }
+    }
+</script>
